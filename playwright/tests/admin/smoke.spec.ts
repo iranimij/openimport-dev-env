@@ -41,4 +41,3 @@ test.describe('OpenImport admin baseline', () => {
     await expect(page.locator('[id="Iranimij_OpenImport::run_destructive_anchor"]')).toContainText('Confirm runs above the safety limit');
   });
 });
-});
