@@ -1,0 +1,31 @@
+services:
+  opensearch:
+    # wardenenv/opensearch:2.12 crashes the JVM (SIGILL) on Apple Silicon; the upstream image works.
+    image: opensearchproject/opensearch:2.5.0
+    environment:
+      - bootstrap.memory_lock=true
+      - DISABLE_SECURITY_PLUGIN=true
+      - OPENSEARCH_JAVA_OPTS=-Xms64m -Xmx512m
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  # SFTP source/destination for OpenImport profiles. From php-fpm: host "sftp", port 22, user "openimport",
+  # password "openimport-sftp" (fixture only). Fixture files are mounted read-only under fixtures/, exports go to out/.
+  sftp:
+    image: atmoz/sftp:alpine
+    command: openimport:openimport-sftp:1001:1001:out
+    volumes:
+      - ./fixtures/files:/home/openimport/fixtures:ro
+
+  # HTTP(S) URL source. From php-fpm: http://files/ (public) and http://files/private/ (basic auth
+  # openimport / openimport-http). "files" is a private address, so OpenImport refuses it unless the host is allowed
+  # in Stores > Configuration > iranimij > OpenImport > Safety (bin/fixture-data allows "files" and "sftp").
+  files:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./fixtures/files:/usr/share/nginx/html:ro
+      - ./.warden/files.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./.warden/files.htpasswd:/etc/nginx/files.htpasswd:ro

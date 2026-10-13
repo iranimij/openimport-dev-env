@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Adds OpenImport's fixture data (German store view, OpenImport safety settings for the fixture's SFTP and HTTP
+# services) to the Warden store.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+echo "==> fixture data"
+warden env exec -T php-fpm bash -lc "cd /var/www/html && php ci/fixture-data.php"

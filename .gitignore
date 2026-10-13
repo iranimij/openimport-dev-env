@@ -1,0 +1,28 @@
+# This repository versions only the environment definition, setup scripts, fixture files and Playwright tests.
+# The Magento installation itself (created by bin/setup) is ignored.
+/*
+!/.gitignore
+!/.env.example
+!/admin.env.example
+!/.warden/
+!/README.md
+!/LICENSE
+!/bin/
+/bin/*
+!/bin/setup
+!/bin/install-modules
+!/bin/fixture-data
+!/bin/datasets
+!/playwright/
+/playwright/node_modules/
+/playwright/test-results/
+/playwright/playwright-report/
+/playwright/.auth/
+!/docs/
+!/modules/
+/modules/*
+!/modules/*.md
+!/ci/
+!/fixtures/
+/fixtures/files/generated/
+!/.github/

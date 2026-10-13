@@ -1,0 +1,132 @@
+name: E2E
+
+# Admin Playwright specs on a fixture store built from public sources (Magento mirror, module-base from Packagist,
+# OpenImport main or the ref given). The fixture's SFTP and HTTP file services run as containers next to the store.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '50 2 * * *'
+  workflow_dispatch:
+    inputs:
+      openimport_ref:
+        description: openimport branch to install (empty = .github/ci/openimport-ref, else main)
+        default: ''
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Playwright · Magento 2.4.9
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      MAGENTO_ROOT: /var/www/magento
+      DB_HOST: 127.0.0.1
+      DB_NAME: magento
+      DB_USER: magento
+      DB_PASSWORD: magento
+      ADMIN_USER: openimport
+      ADMIN_PASSWORD: OpenImport-e2e-2026
+      BASE_URL: http://localhost
+      OI_FIXTURE: shell
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: magento
+          MARIADB_USER: magento
+          MARIADB_PASSWORD: magento
+        ports: ['3306:3306']
+        options: --health-cmd="healthcheck.sh --connect" --health-interval=10s --health-retries=10
+      opensearch:
+        image: opensearchproject/opensearch:2.12.0
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: 'true'
+          OPENSEARCH_JAVA_OPTS: -Xms1g -Xmx1g
+        ports: ['9200:9200']
+      redis:
+        image: redis:7.2
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Fixture file services (SFTP, HTTP)
+        run: |
+          docker run -d --name sftp -p 2222:22 -v "$PWD/fixtures/files:/home/openimport/fixtures:ro" \
+            atmoz/sftp:alpine openimport:openimport-sftp:1001:1001:out
+          docker run -d --name files -p 8081:80 -v "$PWD/fixtures/files:/usr/share/nginx/html:ro" \
+            -v "$PWD/.warden/files.conf:/etc/nginx/conf.d/default.conf:ro" \
+            -v "$PWD/.warden/files.htpasswd:/etc/nginx/files.htpasswd:ro" nginx:1.27-alpine
+          sleep 3
+          curl -fsS http://localhost:8081/stock-de.csv
+          curl -fsS -u openimport:openimport-http http://localhost:8081/private/products-small.csv
+
+      - name: PHP 8.3, nginx
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -yq php8.3-fpm php8.3-cli php8.3-bcmath php8.3-curl php8.3-gd php8.3-intl \
+            php8.3-mbstring php8.3-mysql php8.3-soap php8.3-xml php8.3-zip nginx
+          sudo update-alternatives --set php /usr/bin/php8.3
+          for ini in /etc/php/8.3/cli/php.ini /etc/php/8.3/fpm/php.ini; do
+            sudo sed -i 's/^memory_limit = .*/memory_limit = 4G/; s/^;*realpath_cache_size = .*/realpath_cache_size = 10M/' "$ini"
+          done
+          sudo sed -i "s/^user = www-data/user = runner/; s/^group = www-data/group = runner/" /etc/php/8.3/fpm/pool.d/www.conf
+          sudo mkdir -p "$MAGENTO_ROOT" && sudo chown runner:runner "$MAGENTO_ROOT"
+          php -v
+
+      - name: OpenImport ref
+        # workflow_dispatch input, else .github/ci/openimport-ref (a stacked branch while OpenImport's PRs are open),
+        # else main.
+        run: |
+          ref="${{ inputs.openimport_ref }}"
+          if [ -z "$ref" ] && [ -s .github/ci/openimport-ref ]; then ref="$(tr -d '[:space:]' < .github/ci/openimport-ref)"; fi
+          echo "OPENIMPORT_REF=${ref:-main}" >> "$GITHUB_ENV"
+          echo "OpenImport ref: ${ref:-main}"
+
+      - name: Fixture store
+        run: ci/install-fixture.sh
+
+      - name: Serve (nginx :80)
+        run: |
+          sudo tee /etc/nginx/sites-available/default > /dev/null <<NGINX
+          upstream fastcgi_backend { server unix:/run/php/php8.3-fpm.sock; }
+          server {
+              listen 80;
+              server_name localhost;
+              set \$MAGE_ROOT $MAGENTO_ROOT;
+              include $MAGENTO_ROOT/nginx.conf.sample;
+          }
+          NGINX
+          sudo systemctl restart php8.3-fpm nginx
+          curl -sS -o /dev/null -w 'admin %{http_code}\n' --max-time 300 http://localhost/admin
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Playwright
+        working-directory: playwright
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test
+
+      - name: Reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-playwright
+          path: |
+            playwright/playwright-report
+            ${{ env.MAGENTO_ROOT }}/var/log
+          retention-days: 14

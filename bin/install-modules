@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Installs iranimij/module-base from Packagist and the OpenImport checkout from ./modules/openimport (symlinked path
+# repository, version 1.0.0 so ^1.0 constraints resolve).
+set -euo pipefail
+cd "$(dirname "$0")/.."
+run() { warden env exec -T php-fpm bash -lc "cd /var/www/html && $*"; }
+
+modules="Iranimij_Base"
+packages="iranimij/module-base:^1.0"
+if [ -f modules/openimport/composer.json ]; then
+  run "composer config repositories.openimport '{\"type\":\"path\",\"url\":\"modules/openimport\",\"options\":{\"symlink\":true,\"versions\":{\"iranimij/openimport\":\"1.0.0\"}}}'"
+  packages="$packages iranimij/openimport:1.0.0"
+  modules="$modules Iranimij_OpenImport"
+fi
+echo "==> $packages"
+run "composer require --no-interaction --no-progress --no-plugins -W $packages"
+run "bin/magento module:enable $modules && bin/magento setup:upgrade && bin/magento setup:di:compile && bin/magento cache:flush"
