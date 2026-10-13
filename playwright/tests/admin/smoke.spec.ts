@@ -31,8 +31,14 @@ test.describe('OpenImport admin baseline', () => {
     await page.goto('/admin/admin/user_role/editrole/');
     await page.getByRole('tab', { name: 'Role Resources' }).click();
     await page.locator('select[name="all"]').selectOption('0');
-    const tree = page.locator('[data-role="resource-tree"], .tree-actions, #role-edit-form');
-    await expect(tree.getByText('OpenImport', { exact: true }).first()).toBeVisible();
-    await expect(tree.getByText('Confirm runs above the safety limit')).toBeVisible();
+    // jsTree anchors carry the ACL id; the config node (Stores > Configuration) has the same label "OpenImport".
+    const node = page.locator('[id="Iranimij_OpenImport::openimport_anchor"]');
+    await expect(node).toBeVisible({ timeout: 30_000 });
+    const parent = page.locator('[id="Magento_Backend::convert"]');
+    for (const child of ['profiles', 'profiles_edit', 'run', 'run_destructive', 'runs']) {
+      await expect(parent.locator(`[id="Iranimij_OpenImport::${child}_anchor"]`)).toBeAttached();
+    }
+    await expect(page.locator('[id="Iranimij_OpenImport::run_destructive_anchor"]')).toContainText('Confirm runs above the safety limit');
   });
+});
 });
