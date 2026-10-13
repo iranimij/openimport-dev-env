@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Generates the large benchmark datasets (deterministic) into fixtures/files/generated/:
+# products-10k.csv, products-50k.csv, configurables-2k.csv (2,000 parents x 6 children), customers-20k.csv.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+warden env exec -T php-fpm bash -lc "cd /var/www/html && php ci/generate-datasets.php fixtures/files/generated ${*:-all}"

@@ -1,0 +1,15 @@
+{
+  "name": "openimport-dev-env-playwright",
+  "private": true,
+  "description": "End-to-end tests for the OpenImport fixture store (admin)",
+  "license": "MIT",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^22.0.0"
+  }
+}
