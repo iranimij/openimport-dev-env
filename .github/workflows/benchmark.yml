@@ -1,0 +1,103 @@
+name: Benchmark
+
+# Core import baseline and OpenImport core-bridge overhead on the generated datasets (M0, docs/baseline.md in
+# iranimij/openimport). Runs on demand and when the benchmark or the generator changes. Results: the job summary,
+# a notice annotation per measurement (readable through the check-runs API) and the benchmark.json artifact.
+on:
+  workflow_dispatch:
+    inputs:
+      openimport_ref:
+        description: openimport branch (empty = .github/ci/openimport-ref, else main)
+        default: ''
+      datasets:
+        description: datasets to run
+        default: 'products-10k customers-20k products-50k'
+      magento:
+        description: Magento version
+        default: '2.4.9'
+  pull_request:
+    paths: ['ci/benchmark.php', 'ci/generate-datasets.php', '.github/workflows/benchmark.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    name: Benchmark · Magento ${{ inputs.magento || '2.4.9' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    env:
+      MAGENTO_ROOT: /var/www/magento
+      MAGENTO_VERSION: ${{ inputs.magento || '2.4.9' }}
+      DB_HOST: 127.0.0.1
+      DB_NAME: magento
+      DB_USER: magento
+      DB_PASSWORD: magento
+      ADMIN_USER: openimport
+      ADMIN_PASSWORD: OpenImport-bench-2026
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: magento
+          MARIADB_USER: magento
+          MARIADB_PASSWORD: magento
+        ports: ['3306:3306']
+        options: --health-cmd="healthcheck.sh --connect" --health-interval=10s --health-retries=10
+      opensearch:
+        image: opensearchproject/opensearch:2.12.0
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: 'true'
+          OPENSEARCH_JAVA_OPTS: -Xms1g -Xmx1g
+        ports: ['9200:9200']
+      redis:
+        image: redis:7.2
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v7
+      - name: OpenImport ref
+        run: |
+          ref="${{ inputs.openimport_ref }}"
+          if [ -z "$ref" ] && [ -s .github/ci/openimport-ref ]; then ref="$(tr -d '[:space:]' < .github/ci/openimport-ref)"; fi
+          echo "OPENIMPORT_REF=${ref:-main}" >> "$GITHUB_ENV"
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          extensions: bcmath, gd, intl, mbstring, pdo_mysql, soap, sockets, sodium, xsl, zip
+          ini-values: memory_limit=-1
+      - name: Store (no sample data, indexers on schedule)
+        run: |
+          sudo mkdir -p "$MAGENTO_ROOT" && sudo chown runner:runner "$MAGENTO_ROOT"
+          ci/install-fixture.sh
+      - name: Datasets
+        run: php ci/generate-datasets.php "$RUNNER_TEMP/datasets" ${{ inputs.datasets || 'products-10k customers-20k' }}
+      - name: Benchmark
+        working-directory: ${{ env.MAGENTO_ROOT }}
+        run: |
+          set -o pipefail
+          php -d memory_limit=-1 "$GITHUB_WORKSPACE/ci/benchmark.php" "$RUNNER_TEMP/datasets" "$GITHUB_WORKSPACE/benchmark.json" \
+            ${{ inputs.datasets || 'products-10k customers-20k' }} | tee "$RUNNER_TEMP/bench.log"
+      - name: Report
+        if: always()
+        run: |
+          echo "nproc: $(nproc), memory: $(free -g | awk '/Mem/ {print $2}') GB" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ -f benchmark.json ]; then
+            php -r '$d = json_decode(file_get_contents("benchmark.json"), true);
+              echo "| dataset | path | pass | rows | created | updated | invalid | seconds | rows/min | peak MB |\n|---|---|---|---|---|---|---|---|---|---|\n";
+              foreach ($d["results"] as $r) { echo "| {$r["dataset"]} | {$r["path"]} | {$r["pass"]} | {$r["rows"]} | {$r["created"]} | {$r["updated"]} | {$r["invalid"]} | {$r["seconds"]} | {$r["rows_per_minute"]} | {$r["peak_mb"]} |\n"; }' \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "::notice title=benchmark.json::$(tr -d '\n' < benchmark.json | sed 's/%/%25/g')"
+          fi
+          if [ -f "$RUNNER_TEMP/bench.log" ]; then echo "::notice title=benchmark log::$(tail -n 40 "$RUNNER_TEMP/bench.log" | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}')"; fi
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: benchmark
+          path: |
+            benchmark.json
+            ${{ env.MAGENTO_ROOT }}/var/log
+          retention-days: 30

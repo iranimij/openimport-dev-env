@@ -26,6 +26,10 @@ grep -q repo.magento.com composer.json && { echo "repo.magento.com still configu
 composer config repositories.iranimij-openimport vcs https://github.com/iranimij/openimport
 composer config minimum-stability dev
 composer config prefer-stable true
+# Composer 2.9+ refuses packages with security advisories while resolving; old Magento patch releases pin some.
+php -r '$f = "composer.json"; $c = json_decode(file_get_contents($f), true);
+  $c["config"]["policy"]["advisories"]["block"] = false; $c["config"]["audit"]["block-insecure"] = false;
+  file_put_contents($f, json_encode($c, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");'
 composer config --no-plugins allow-plugins.magento/composer-dependency-version-audit-plugin false
 composer config --no-plugins allow-plugins.magento/* true
 composer config --no-plugins allow-plugins.laminas/laminas-dependency-plugin true
