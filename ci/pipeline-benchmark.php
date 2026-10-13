@@ -11,6 +11,8 @@
  * Per dataset: a profile maps every column 1:1, with transforms on sku, url_key and name (another prefix, so the
  * pipeline creates its own products), delta on. Passes: dry run, live import, the same file again (delta: every row
  * unchanged), the same file with --full (every row sent again), and a file with 1 % of the rows changed (delta).
+ * Before them, core's own CSV import of the same file (create, then update), each in its own process, as the
+ * reference for time and peak memory.
  */
 
 declare(strict_types=1);
@@ -105,6 +107,37 @@ foreach ($sets as $set) {
         ->setAllowedErrors(1000)
         ->setMapping($mapping);
     $profiles->save($profile);
+    // Core's own CSV import of the same file, one pass per process: the reference for time and peak memory.
+    foreach (['create', 'update'] as $corePass) {
+        $json = sys_get_temp_dir() . "/core-$set-$corePass.json";
+        $started = microtime(true);
+        exec(sprintf(
+            'BENCH_PATH=core BENCH_PASS=%s php -d memory_limit=-1 %s %s %s %s 2>&1',
+            $corePass,
+            escapeshellarg(__DIR__ . '/benchmark.php'),
+            escapeshellarg($datasets),
+            escapeshellarg($json),
+            escapeshellarg($set)
+        ), $coreLines, $coreExit);
+        $core = json_decode((string) @file_get_contents($json), true)['results'][0] ?? [];
+        $line = [
+            'dataset' => $set,
+            'pass' => "core CSV $corePass (own process)",
+            'status' => ($core['imported'] ?? false) ? 'success' : 'failed',
+            'read' => $core['rows'] ?? 0,
+            'unchanged' => 0,
+            'created' => $core['created'] ?? 0,
+            'updated' => $core['updated'] ?? 0,
+            'errors' => $core['invalid'] ?? 0,
+            'seconds' => round(microtime(true) - $started, 1),
+            'peak_mb' => $core['peak_mb'] ?? 0,
+            'exit' => $coreExit,
+            'message' => $core['first_error'] ?? implode("\n", array_slice($coreLines, -3)),
+        ];
+        $coreLines = [];
+        $results[] = $line;
+        echo json_encode($line), "\n";
+    }
     $changedFile = "$datasets/$set-1pct.csv";
     $changedRows = one_percent($file, $changedFile);
 
