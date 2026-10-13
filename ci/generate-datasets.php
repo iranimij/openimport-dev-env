@@ -99,6 +99,10 @@ foreach ($sets as $set) {
                     $row = array_fill_keys($productColumns, '');
                     $row['sku'] = sprintf('OI-S%06d', $i);
                     $row['store_view_code'] = 'de';
+                    // Core validates the rows of a product that is new in the file as new products: type and
+                    // attribute set are required on store-view rows too.
+                    $row['attribute_set_code'] = 'Default';
+                    $row['product_type'] = 'simple';
                     $row['name'] = 'DE ' . name($i);
                     $write(array_values($row));
                 }
