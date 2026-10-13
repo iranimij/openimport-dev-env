@@ -94,7 +94,7 @@ jobs:
           echo "OpenImport ref: ${ref:-main}"
 
       - name: Fixture store
-        run: ci/install-fixture.sh
+        run: .github/ci/logged.sh "Fixture store" ci/install-fixture.sh
 
       - name: Serve (nginx :80)
         run: |
@@ -119,7 +119,7 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
-          npx playwright test
+          ../.github/ci/logged.sh Playwright npx playwright test
 
       - name: Reports
         if: always()
