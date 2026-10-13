@@ -31,7 +31,12 @@ async function openNewProfile(page: Page, name: string, entity: string): Promise
 }
 
 async function upload(page: Page, file: string | { name: string; mimeType: string; buffer: Buffer }): Promise<void> {
+  const response = page.waitForResponse((r) => r.url().includes('/openimport/profile/upload'), { timeout: 60_000 });
   await page.locator('.openimport-upload input[type="file"]').setInputFiles(file);
+  const answer = await response;
+  const body = await answer.text();
+  expect(answer.status(), `upload answer: ${body.slice(0, 800)}`).toBe(200);
+  expect(body.startsWith('{') && !('error' in JSON.parse(body)), `upload answer: ${body.slice(0, 800)}`).toBe(true);
   await expect(page.locator('.openimport-upload .admin__field-note strong')).not.toBeEmpty({ timeout: 30_000 });
   await expect(page.locator('.openimport-sample table')).toBeVisible({ timeout: 30_000 });
 }
