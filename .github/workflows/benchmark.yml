@@ -74,12 +74,12 @@ jobs:
           sudo mkdir -p "$MAGENTO_ROOT" && sudo chown runner:runner "$MAGENTO_ROOT"
           .github/ci/logged.sh "Fixture store" ci/install-fixture.sh
       - name: Datasets
-        run: .github/ci/logged.sh Datasets php ci/generate-datasets.php "$RUNNER_TEMP/datasets" ${{ inputs.datasets || 'products-10k customers-20k' }}
+        run: .github/ci/logged.sh Datasets php ci/generate-datasets.php "$MAGENTO_ROOT/var/openimport-bench" ${{ inputs.datasets || 'products-10k customers-20k' }}
       - name: Benchmark
         working-directory: ${{ env.MAGENTO_ROOT }}
         run: |
           set -o pipefail
-          "$GITHUB_WORKSPACE/.github/ci/logged.sh" Benchmark php -d memory_limit=-1 "$GITHUB_WORKSPACE/ci/benchmark.php" "$RUNNER_TEMP/datasets" "$GITHUB_WORKSPACE/benchmark.json" \
+          "$GITHUB_WORKSPACE/.github/ci/logged.sh" Benchmark php -d memory_limit=-1 "$GITHUB_WORKSPACE/ci/benchmark.php" "$MAGENTO_ROOT/var/openimport-bench" "$GITHUB_WORKSPACE/benchmark.json" \
             ${{ inputs.datasets || 'products-10k customers-20k' }} | tee "$RUNNER_TEMP/bench.log"
       - name: Report
         if: always()

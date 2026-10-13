@@ -5,7 +5,8 @@
  *
  * M0 baseline (07 · Build Brief §4.4): how long Magento's own import takes for the generated datasets, and how much
  * OpenImport's core bridge adds when the same rows come through MappedSource instead of core's CSV source.
- * Run from the Magento root: php <dev-env>/ci/benchmark.php <datasets dir> <output json> [products-10k ...]
+ * Run from the Magento root: php <dev-env>/ci/benchmark.php <datasets dir inside the Magento root> <output json>
+ * [products-10k ...] (core's CSV source only opens files inside the Magento root).
  *
  * Each measurement is a fresh import (new entities) followed by the same file again (every entity updated, no data
  * changes), so both "first import" and "nightly re-import" are measured. The OpenImport pass imports the same rows
