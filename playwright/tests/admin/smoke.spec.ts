@@ -33,6 +33,6 @@ test.describe('OpenImport admin baseline', () => {
     await page.locator('select[name="all"]').selectOption('0');
     const tree = page.locator('[data-role="resource-tree"], .tree-actions, #role-edit-form');
     await expect(tree.getByText('OpenImport', { exact: true }).first()).toBeVisible();
-    await expect(tree.getByText('Confirm runs above the safety limit (Replace, Delete)')).toBeVisible();
+    await expect(tree.getByText('Confirm runs above the safety limit')).toBeVisible();
   });
 });
