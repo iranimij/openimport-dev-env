@@ -48,6 +48,11 @@ function rows(string $file, bool $swap): \Generator
     while (($row = fgetcsv($handle, null, ',', '"', '\\')) !== false) {
         $assoc = array_combine($header, $row);
         if ($swap) {
+            // Names too: store-view rows have no url_key, core derives it from the name, and two products with the
+            // same name in one store view collide on the URL key.
+            if (isset($assoc['name']) && $assoc['name'] !== '') {
+                $assoc['name'] = 'OB ' . $assoc['name'];
+            }
             foreach (['sku', 'url_key', 'email', 'configurable_variations'] as $column) {
                 if (isset($assoc[$column]) && $assoc[$column] !== '') {
                     $assoc[$column] = str_replace(['OI-', 'oi-', 'oi.customer'], ['OB-', 'ob-', 'ob.customer'], $assoc[$column]);
