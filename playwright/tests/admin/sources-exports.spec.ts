@@ -1,5 +1,6 @@
 import { Page } from '@playwright/test';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { test, expect, magento, services, collectCspViolations } from '../fixture';
 
 /**
@@ -8,7 +9,18 @@ import { test, expect, magento, services, collectCspViolations } from '../fixtur
  */
 const suffix = Date.now().toString(36);
 
+const consoleLog: string[] = [];
+let lastFields = '';
+
 async function openNewProfile(page: Page, name: string, entity: string, direction = 'import'): Promise<void> {
+  consoleLog.length = 0;
+  page.on('console', (message) => consoleLog.push(`${message.type()}: ${message.text()}`));
+  page.on('pageerror', (error) => consoleLog.push(`pageerror: ${error.message}`));
+  page.on('response', async (response) => {
+    if (response.url().includes('/openimport/profile/fields')) {
+      lastFields = (await response.text().catch(() => '')).slice(0, 1500);
+    }
+  });
   await page.goto('/admin/openimport/profile/new/');
   await expect(page.locator('input[name="name"]')).toBeVisible({ timeout: 60_000 });
   await page.locator('input[name="name"]').fill(name);
@@ -34,6 +46,21 @@ async function testConnection(page: Page, expected: string | RegExp): Promise<vo
   await expect(page.locator('.openimport-test-source .message')).toContainText(expected, { timeout: 60_000 });
 }
 
+/** Auto-match with diagnostics (console, fields answer, mapping markup) when the notice does not appear. */
+async function autoMatch(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Auto-match' }).click();
+  try {
+    await expect(page.locator('.openimport-mapping .message-notice')).toContainText('matched');
+  } catch (error) {
+    const html = await page.locator('.openimport-mapping').innerHTML().catch(() => '(no .openimport-mapping)');
+    const text = `Auto-match showed no notice.\nConsole:\n${consoleLog.slice(-30).join('\n')}\nFields answer: ${lastFields}\nMapping: ${html.slice(0, 3000)}`;
+    mkdirSync(resolve(__dirname, '../../diagnostics'), { recursive: true });
+    writeFileSync(resolve(__dirname, '../../diagnostics/automatch.txt'), text);
+    throw new Error(text);
+  }
+  await expect(page.locator('.openimport-mapping-table tbody tr').first()).toBeVisible();
+}
+
 test.describe.serial('OpenImport sources and exports', () => {
   test.setTimeout(180_000);
 
@@ -52,9 +79,7 @@ test.describe.serial('OpenImport sources and exports', () => {
     // "Test connection" also loads the first rows, so the mapping step can auto-match.
     await expect(page.locator('.openimport-sample table')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('.openimport-sample thead')).toContainText('Preis');
-    await page.getByRole('button', { name: 'Auto-match' }).click();
-    await expect(page.locator('.openimport-mapping .message-notice')).toContainText('matched');
-    await expect(page.locator('.openimport-mapping-table tbody tr').first()).toBeVisible();
+    await autoMatch(page);
 
     await saveAndDryRun(page);
     await processQueue(page);
