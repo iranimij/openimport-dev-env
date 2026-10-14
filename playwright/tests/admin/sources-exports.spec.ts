@@ -175,19 +175,22 @@ test.describe.serial('OpenImport sources and exports', () => {
     expect(violations).toEqual([]);
   });
 
-  test('German admin locale: grids and the form are translated', async ({ page }) => {
+  test('German admin locale: grid values and the run page are translated', async ({ page }) => {
     const user = adminCredentials().user.replace(/'/g, "''");
     sql(`UPDATE admin_user SET interface_locale = 'de_DE' WHERE username = '${user}'`);
     // Magento caches UI component labels per configuration, not per locale (core behaviour): clean it.
     magento('cache:clean', 'config');
     try {
+      // Server-rendered text (grid values, run page) comes from the module's de_DE.csv. Column headers and
+      // knockout labels are translated by Magento's JS translation file, which needs de_DE static content.
       await page.goto('/admin/openimport/profile/index/');
       const grid = page.locator('.data-grid').filter({ has: page.locator('tbody td') }).first();
-      await expect(grid).toContainText('Letzter Lauf', { timeout: 60_000 });
-      await expect(page.getByRole('button', { name: 'Profil hinzufügen' })).toBeVisible();
-      await page.goto('/admin/openimport/profile/new/');
-      await expect(page.locator('input[name="name"]')).toBeVisible({ timeout: 60_000 });
-      await expect(page.getByRole('button', { name: 'Feld hinzufügen' })).toBeVisible();
+      await expect(grid).toContainText('Nur manuell', { timeout: 60_000 });
+      await expect(grid).toContainText('Erfolgreich');
+      const runId = sql("SELECT MAX(run_id) FROM openimport_run WHERE status = 'success'")[0][0];
+      await page.goto(`/admin/openimport/run/view/id/${runId}/`);
+      await expect(page.locator('.openimport-run')).toContainText(/Probelauf|Echter Lauf/, { timeout: 60_000 });
+      await expect(page.locator('.openimport-run')).toContainText('Gelesene Zeilen');
     } finally {
       sql(`UPDATE admin_user SET interface_locale = 'en_US' WHERE username = '${user}'`);
       magento('cache:clean', 'config');
