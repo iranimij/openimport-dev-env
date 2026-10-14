@@ -11,6 +11,7 @@ const suffix = Date.now().toString(36);
 
 const consoleLog: string[] = [];
 let lastFields = '';
+const fieldsLog: string[] = [];
 
 async function openNewProfile(page: Page, name: string, entity: string, direction = 'import'): Promise<void> {
   consoleLog.length = 0;
@@ -18,7 +19,9 @@ async function openNewProfile(page: Page, name: string, entity: string, directio
   page.on('pageerror', (error) => consoleLog.push(`pageerror: ${error.message}`));
   page.on('response', async (response) => {
     if (response.url().includes('/openimport/profile/fields')) {
-      lastFields = (await response.text().catch(() => '')).slice(0, 1500);
+      const sent = (response.request().postData() || '').replace(/form_key=[^&]*&?/, '').slice(0, 300);
+      lastFields = (await response.text().catch(() => '')).slice(0, 600);
+      fieldsLog.push(`${new Date().toISOString()} sent ${sent} → ${lastFields.slice(0, 200)}`);
     }
   });
   await page.goto('/admin/openimport/profile/new/');
@@ -53,7 +56,7 @@ async function autoMatch(page: Page): Promise<void> {
     await expect(page.locator('.openimport-mapping .message-notice')).toContainText('matched');
   } catch (error) {
     const html = await page.locator('.openimport-mapping').innerHTML().catch(() => '(no .openimport-mapping)');
-    const text = `Auto-match showed no notice.\nConsole:\n${consoleLog.slice(-30).join('\n')}\nFields answer: ${lastFields}\nMapping: ${html.slice(0, 3000)}`;
+    const text = `Auto-match showed no notice.\nConsole:\n${consoleLog.slice(-30).join('\n')}\nFields requests:\n${fieldsLog.join('\n')}\nMapping: ${html.slice(0, 1500)}`;
     mkdirSync(resolve(__dirname, '../../diagnostics'), { recursive: true });
     writeFileSync(resolve(__dirname, '../../diagnostics/automatch.txt'), text);
     throw new Error(text);
