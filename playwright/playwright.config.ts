@@ -9,7 +9,7 @@ export default defineConfig({
   testDir: './tests',
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  reporter: [['list'], ['html', { open: 'never' }], ['json', { outputFile: 'test-results.json' }]],
   use: {
     baseURL: process.env.BASE_URL ?? 'https://app.openimport.test',
     ignoreHTTPSErrors: true,

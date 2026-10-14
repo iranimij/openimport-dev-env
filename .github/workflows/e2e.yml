@@ -121,6 +121,31 @@ jobs:
           npx playwright install --with-deps chromium
           ../.github/ci/logged.sh Playwright npx playwright test
 
+      - name: Diagnostics
+        if: failure()
+        run: |
+          # Specs write what they saw into playwright/diagnostics/*.txt; one notice each (readable through the API).
+          for f in playwright/diagnostics/*.txt; do
+            [ -f "$f" ] || continue
+            echo "::notice title=$(basename "$f")::$(head -c 3800 "$f" | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}')"
+          done
+          tail -n 80 "$MAGENTO_ROOT/var/log/system.log" 2>/dev/null | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}' | sed 's/^/::notice title=system.log::/'; echo
+          tail -n 60 "$MAGENTO_ROOT/var/log/openimport.log" 2>/dev/null | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}' | sed 's/^/::notice title=openimport.log::/'; echo
+          # One notice per failed test with its first error (the job log tail only shows the last failure).
+          node -e '
+            const r = require("./playwright/test-results.json"); const out = [];
+            const walk = (s) => { for (const p of s.specs || []) for (const t of p.tests || []) for (const x of t.results || []) if (x.status === "failed" || x.status === "timedOut") out.push([p.title, (x.errors || []).map((e) => e.message || "").join("\n--\n").replace(/\x1b\[[0-9;]*m/g, "").slice(0, 3000)]); for (const c of s.suites || []) walk(c); };
+            for (const s of r.suites || []) walk(s);
+            for (const [t, m] of out) console.log("::notice title=" + t.replace(/[%:\n]/g, " ").slice(0, 120) + "::" + m.replace(/%/g, "%25").replace(/\r/g, "").replace(/\n/g, "%0A"));
+          ' 2>/dev/null || true
+          # Run folders: which files each run read and wrote (first bytes), and the run rows.
+          { for d in "$MAGENTO_ROOT"/var/openimport/runs/*/; do
+              [ -d "$d" ] || continue; echo "== $d"; ls -la "$d"
+              for f in "$d"*; do [ -f "$f" ] && { echo "-- $(basename "$f")"; head -c 300 "$f" | tr -d '\r'; echo; }; done
+            done
+            mysql -h 127.0.0.1 -u magento -pmagento magento -e 'SELECT run_id, profile_id, status, mode, source_file, LEFT(message, 300) AS message FROM openimport_run ORDER BY run_id' 2>/dev/null
+          } | head -c 3800 | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}' | sed 's/^/::notice title=runs::/'; echo
+
       - name: Reports
         if: always()
         uses: actions/upload-artifact@v7

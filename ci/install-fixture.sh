@@ -45,7 +45,7 @@ composer install --no-interaction --no-progress --prefer-dist \
 echo "::endgroup::"
 
 echo "::group::setup:install"
-bin/magento setup:install --no-interaction \
+bin/magento setup:install --no-interaction -v \
   --base-url=http://localhost/ --backend-frontname=admin \
   --db-host="$DB_HOST" --db-name="$DB_NAME" --db-user="$DB_USER" --db-password="$DB_PASSWORD" \
   --search-engine=opensearch --opensearch-host=127.0.0.1 --opensearch-port=9200 --opensearch-enable-auth=0 \
