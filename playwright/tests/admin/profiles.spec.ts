@@ -51,7 +51,15 @@ async function upload(page: Page, file: string | { name: string; mimeType: strin
     writeFileSync(resolve(__dirname, '../../diagnostics/upload.txt'), text);
     throw new Error(text);
   }
-  await expect(page.locator('.openimport-sample table')).toBeVisible({ timeout: 30_000 });
+  try {
+    await expect(page.locator('.openimport-sample table')).toBeVisible({ timeout: 30_000 });
+  } catch (error) {
+    const html = await page.locator('.openimport-sample').innerHTML().catch(() => '(no .openimport-sample)');
+    const text = `The sample table did not appear.\nConsole:\n${consoleLog.slice(-30).join('\n')}\nAnswer: ${body.slice(0, 1200)}\nSample: ${html.slice(0, 2500)}`;
+    mkdirSync(resolve(__dirname, '../../diagnostics'), { recursive: true });
+    writeFileSync(resolve(__dirname, '../../diagnostics/sample.txt'), text);
+    throw new Error(text);
+  }
 }
 
 /** Index of the mapping row whose Magento field is `field` (fields are typed into a text input too). */
