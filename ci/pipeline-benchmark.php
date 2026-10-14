@@ -137,6 +137,11 @@ foreach ($sets as $set) {
         $coreLines = [];
         $results[] = $line;
         echo json_encode($line), "\n";
+        if (getenv('GITHUB_ACTIONS')) {
+            $notice = $line;
+            unset($notice['message']);
+            echo '::notice title=pipeline ', $set, '::', str_replace('%', '%25', json_encode($notice)), "\n";
+        }
     }
     $changedFile = "$datasets/$set-1pct.csv";
     $changedRows = one_percent($file, $changedFile);
@@ -182,6 +187,11 @@ foreach ($sets as $set) {
         $lines = [];
         $results[] = $line;
         echo json_encode($line), "\n";
+        if (getenv('GITHUB_ACTIONS')) {
+            $notice = $line;
+            unset($notice['message']);
+            echo '::notice title=pipeline ', $set, '::', str_replace('%', '%25', json_encode($notice)), "\n";
+        }
         file_put_contents($output, json_encode(['php' => PHP_VERSION, 'results' => $results], JSON_PRETTY_PRINT));
     }
 }

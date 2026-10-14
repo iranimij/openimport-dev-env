@@ -113,9 +113,10 @@ jobs:
               echo "| dataset | pass | status | read | unchanged | created | updated | errors | seconds | peak MB |\n|---|---|---|---|---|---|---|---|---|---|\n";
               foreach ($d["results"] as $r) { echo "| {$r["dataset"]} | {$r["pass"]} | {$r["status"]} | {$r["read"]} | {$r["unchanged"]} | {$r["created"]} | {$r["updated"]} | {$r["errors"]} | {$r["seconds"]} | {$r["peak_mb"]} |\n"; }' \
               | tee -a "$GITHUB_STEP_SUMMARY"
-            # One notice per pass: a single notice is cut at 4 KB.
+            # One notice per pass (a single notice is cut at 4 KB), newest dataset first: GitHub keeps 10 annotations
+            # per step, and the benchmark step already printed the first 10 in running order.
             php -r '$d = json_decode(file_get_contents("pipeline-benchmark.json"), true);
-              foreach ($d["results"] as $r) { unset($r["message"]); echo "::notice title=pipeline {$r["dataset"]}::" . str_replace("%", "%25", json_encode($r)) . "\n"; }'
+              foreach (array_reverse($d["results"]) as $r) { unset($r["message"]); echo "::notice title=pipeline {$r["dataset"]}::" . str_replace("%", "%25", json_encode($r)) . "\n"; }'
           fi
           if [ -f "$RUNNER_TEMP/bench.log" ]; then echo "::notice title=benchmark log::$(tail -n 40 "$RUNNER_TEMP/bench.log" | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}')"; fi
       - uses: actions/upload-artifact@v7
