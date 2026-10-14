@@ -238,7 +238,16 @@ test.describe.serial('OpenImport admin', () => {
     await expect(grid.first()).toContainText('Run #');
     await noSeriousAxeViolations(page);
     await page.goto('/admin/openimport/run/index/');
-    await expect(page.locator('.data-grid').filter({ has: page.locator('tbody td') }).first()).toContainText('Success', { timeout: 60_000 });
+    const runGrid = page.locator('.data-grid').filter({ has: page.locator('tbody td') }).first();
+    try {
+      await expect(runGrid).toContainText('Success', { timeout: 60_000 });
+    } catch (error) {
+      const cells = await runGrid.locator('tbody tr').first().locator('td').evaluateAll((tds) => tds.map((td) => td.innerHTML.slice(0, 300)));
+      const text = `Run grid status is not rendered as a chip.\nFirst row cells:\n${cells.join('\n---\n')}`;
+      mkdirSync(resolve(__dirname, '../../diagnostics'), { recursive: true });
+      writeFileSync(resolve(__dirname, '../../diagnostics/run-grid.txt'), text);
+      throw new Error(text);
+    }
     await noSeriousAxeViolations(page);
 
     // The mapping step works with the keyboard alone.
