@@ -131,6 +131,13 @@ jobs:
           done
           tail -n 80 "$MAGENTO_ROOT/var/log/system.log" 2>/dev/null | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}' | sed 's/^/::notice title=system.log::/'; echo
           tail -n 60 "$MAGENTO_ROOT/var/log/openimport.log" 2>/dev/null | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}' | sed 's/^/::notice title=openimport.log::/'; echo
+          # Run folders: which files each run read and wrote (first bytes), and the run rows.
+          { for d in "$MAGENTO_ROOT"/var/openimport/runs/*/; do
+              [ -d "$d" ] || continue; echo "== $d"; ls -la "$d"
+              for f in "$d"*; do [ -f "$f" ] && { echo "-- $(basename "$f")"; head -c 300 "$f" | tr -d '\r'; echo; }; done
+            done
+            mysql -h 127.0.0.1 -u magento -pmagento magento -e 'SELECT run_id, profile_id, status, mode, source_file, LEFT(message, 300) AS message FROM openimport_run ORDER BY run_id' 2>/dev/null
+          } | head -c 3800 | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}' | sed 's/^/::notice title=runs::/'; echo
 
       - name: Reports
         if: always()
