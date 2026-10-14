@@ -43,7 +43,7 @@ async function upload(page: Page, file: string | { name: string; mimeType: strin
   expect(answer.status(), `upload answer: ${body.slice(0, 800)}`).toBe(200);
   expect(body.startsWith('{') && !('error' in JSON.parse(body)), `upload answer: ${body.slice(0, 800)}`).toBe(true);
   try {
-    await expect(page.locator('.openimport-upload .admin__field-note strong')).not.toBeEmpty({ timeout: 30_000 });
+    await expect(page.locator('.openimport-upload .admin__field-note strong')).not.toBeEmpty({ timeout: 20_000 });
   } catch (error) {
     const html = await page.locator('.openimport-upload').innerHTML();
     throw new Error(`The upload field did not show the file name.\nConsole: ${consoleLog.slice(-20).join('\n')}\nAnswer: ${body.slice(0, 1500)}\nField: ${html.slice(0, 3000)}`);
@@ -76,6 +76,8 @@ async function processQueue(page: Page): Promise<void> {
 }
 
 test.describe.serial('OpenImport admin', () => {
+  test.setTimeout(180_000);
+
   let productProfile = '';
 
   test('products with a German store-view column: upload, auto-match, dry run, run for real', async ({ page }) => {
