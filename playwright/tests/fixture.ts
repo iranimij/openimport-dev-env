@@ -13,6 +13,11 @@ const repoRoot = resolve(__dirname, '../..');
 
 export const magentoRoot = shell ? (process.env.MAGENTO_ROOT ?? repoRoot) : repoRoot;
 
+/** The fixture's file services as Magento reaches them: Warden service names locally, host ports in CI. */
+export const services = shell
+  ? { filesUrl: 'http://localhost:8081', sftpHost: 'localhost', sftpPort: '2222' }
+  : { filesUrl: 'http://files', sftpHost: 'sftp', sftpPort: '22' };
+
 /** Runs SQL and returns tab-separated rows. */
 export function sql(query: string): string[][] {
   const args = ['-N', '-B', '-e', query];

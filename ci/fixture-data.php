@@ -49,5 +49,5 @@ $storeManager->reinitStores();
 $de = $storeManager->getStore('de');
 $config->save('general/locale/code', 'de_DE', 'stores', (int) $de->getId());
 
-$config->save('openimport/security/allowed_hosts', "files\nsftp");
-echo "OpenImport: files and sftp allowed as private hosts\n";
+$config->save('openimport/security/allowed_hosts', "files\nsftp\nlocalhost\n127.0.0.1");
+echo "OpenImport: files, sftp and localhost allowed as private hosts (fixture only)\n";
