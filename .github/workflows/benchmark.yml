@@ -15,8 +15,16 @@ on:
       magento:
         description: Magento version
         default: '2.4.9'
+      pipeline:
+        description: also run the whole OpenImport pipeline (one process per pass)
+        type: boolean
+        default: true
+      core:
+        description: run the core / bridge baseline
+        type: boolean
+        default: true
   pull_request:
-    paths: ['ci/benchmark.php', 'ci/generate-datasets.php', '.github/workflows/benchmark.yml']
+    paths: ['ci/benchmark.php', 'ci/pipeline-benchmark.php', 'ci/generate-datasets.php', '.github/workflows/benchmark.yml']
 
 permissions:
   contents: read
@@ -76,11 +84,19 @@ jobs:
       - name: Datasets
         run: .github/ci/logged.sh Datasets php ci/generate-datasets.php "$MAGENTO_ROOT/var/openimport-bench" ${{ inputs.datasets || 'products-10k customers-20k' }}
       - name: Benchmark
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.core }}
         working-directory: ${{ env.MAGENTO_ROOT }}
         run: |
           set -o pipefail
           "$GITHUB_WORKSPACE/.github/ci/logged.sh" Benchmark php -d memory_limit=-1 "$GITHUB_WORKSPACE/ci/benchmark.php" "$MAGENTO_ROOT/var/openimport-bench" "$GITHUB_WORKSPACE/benchmark.json" \
             ${{ inputs.datasets || 'products-10k customers-20k' }} | tee "$RUNNER_TEMP/bench.log"
+      - name: Pipeline benchmark
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.pipeline }}
+        working-directory: ${{ env.MAGENTO_ROOT }}
+        run: |
+          set -o pipefail
+          "$GITHUB_WORKSPACE/.github/ci/logged.sh" "Pipeline benchmark" php -d memory_limit=-1 "$GITHUB_WORKSPACE/ci/pipeline-benchmark.php" "$MAGENTO_ROOT/var/openimport-bench" "$GITHUB_WORKSPACE/pipeline-benchmark.json" \
+            ${{ inputs.datasets || 'products-10k customers-20k' }} | tee "$RUNNER_TEMP/pipeline.log"
       - name: Report
         if: always()
         run: |
@@ -92,6 +108,16 @@ jobs:
               | tee -a "$GITHUB_STEP_SUMMARY"
             echo "::notice title=benchmark.json::$(tr -d '\n' < benchmark.json | sed 's/%/%25/g')"
           fi
+          if [ -f pipeline-benchmark.json ]; then
+            php -r '$d = json_decode(file_get_contents("pipeline-benchmark.json"), true);
+              echo "| dataset | pass | status | read | unchanged | created | updated | errors | seconds | peak MB |\n|---|---|---|---|---|---|---|---|---|---|\n";
+              foreach ($d["results"] as $r) { echo "| {$r["dataset"]} | {$r["pass"]} | {$r["status"]} | {$r["read"]} | {$r["unchanged"]} | {$r["created"]} | {$r["updated"]} | {$r["errors"]} | {$r["seconds"]} | {$r["peak_mb"]} |\n"; }' \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+            # One notice per pass (a single notice is cut at 4 KB), newest dataset first: GitHub keeps 10 annotations
+            # per step, and the benchmark step already printed the first 10 in running order.
+            php -r '$d = json_decode(file_get_contents("pipeline-benchmark.json"), true);
+              foreach (array_reverse($d["results"]) as $r) { unset($r["message"]); echo "::notice title=pipeline {$r["dataset"]}::" . str_replace("%", "%25", json_encode($r)) . "\n"; }'
+          fi
           if [ -f "$RUNNER_TEMP/bench.log" ]; then echo "::notice title=benchmark log::$(tail -n 40 "$RUNNER_TEMP/bench.log" | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}')"; fi
       - uses: actions/upload-artifact@v7
         if: always()
@@ -99,5 +125,6 @@ jobs:
           name: benchmark
           path: |
             benchmark.json
+            pipeline-benchmark.json
             ${{ env.MAGENTO_ROOT }}/var/log
           retention-days: 30

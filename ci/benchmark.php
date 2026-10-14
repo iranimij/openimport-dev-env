@@ -81,8 +81,10 @@ foreach ($sets as $set) {
         exit(1);
     }
     $entity = $entities[$set];
-    foreach (['core', 'openimport'] as $path) {
-        foreach (['create', 'update'] as $pass) {
+    // BENCH_PATH / BENCH_PASS limit the run to one path or pass (the pipeline benchmark runs single core passes in
+    // their own process to compare peak memory).
+    foreach (array_filter(['core', 'openimport'], static fn (string $p): bool => in_array(getenv('BENCH_PATH') ?: $p, [$p], true)) as $path) {
+        foreach (array_filter(['create', 'update'], static fn (string $p): bool => in_array(getenv('BENCH_PASS') ?: $p, [$p], true)) as $pass) {
             gc_collect_cycles();
             memory_reset_peak_usage();
             $source = $path === 'core'
