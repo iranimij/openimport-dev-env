@@ -232,12 +232,13 @@ test.describe.serial('OpenImport admin', () => {
   test('grids, keyboard and accessibility', async ({ page }) => {
     const violations = collectCspViolations(page);
     await page.goto('/admin/openimport/profile/index/');
-    // Two tables on the page: the grid and its sticky header copy.
-    await expect(page.locator('.data-grid').first()).toContainText(productProfile, { timeout: 60_000 });
-    await expect(page.locator('.data-grid').first()).toContainText('Run #');
+    // Two tables on the page: the grid and its sticky header copy; the one with rows is the grid.
+    const grid = page.locator('.data-grid').filter({ has: page.locator('tbody td') });
+    await expect(grid.first()).toContainText(productProfile, { timeout: 60_000 });
+    await expect(grid.first()).toContainText('Run #');
     await noSeriousAxeViolations(page);
     await page.goto('/admin/openimport/run/index/');
-    await expect(page.locator('.data-grid').first()).toContainText('Success', { timeout: 60_000 });
+    await expect(page.locator('.data-grid').filter({ has: page.locator('tbody td') }).first()).toContainText('Success', { timeout: 60_000 });
     await noSeriousAxeViolations(page);
 
     // The mapping step works with the keyboard alone.

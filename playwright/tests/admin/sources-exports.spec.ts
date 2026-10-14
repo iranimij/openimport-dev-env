@@ -130,7 +130,7 @@ test.describe.serial('OpenImport sources and exports', () => {
     await expect(page.locator('select[name="source_type"]')).toBeHidden();
     await page.locator('select[name="format"]').selectOption('xlsx');
     await page.locator('select[name="export_options[destination]"]').selectOption('download');
-    await page.locator('input[name="export_options[file_name]"]').fill('products-{date}.{ext}');
+    await page.locator('input[name="export_options[file_name]"]:visible').fill('products-{date}.{ext}');
     await page.getByRole('button', { name: 'Add every column' }).click();
     const rows = page.locator('.openimport-mapping-table tbody tr');
     await expect(rows.first()).toBeVisible();
@@ -159,11 +159,11 @@ test.describe.serial('OpenImport sources and exports', () => {
     await page.getByRole('link', { name: 'Edit profile' }).click();
     await expect(page.locator('input[name="name"]')).toBeVisible({ timeout: 60_000 });
     await page.locator('select[name="export_options[destination]"]').selectOption('sftp');
-    await page.locator('input[name="export_options[host]"]').fill(services.sftpHost);
-    await page.locator('input[name="export_options[port]"]').fill(services.sftpPort);
-    await page.locator('input[name="export_options[username]"]').fill('openimport');
-    await page.locator('input[name="export_options[password]"]').fill('openimport-sftp');
-    await page.locator('input[name="export_options[path]"]').fill('out');
+    await page.locator('input[name="export_options[host]"]:visible').fill(services.sftpHost);
+    await page.locator('input[name="export_options[port]"]:visible').fill(services.sftpPort);
+    await page.locator('input[name="export_options[username]"]:visible').fill('openimport');
+    await page.locator('input[name="export_options[password]"]:visible').fill('openimport-sftp');
+    await page.locator('input[name="export_options[path]"]:visible').fill('out');
     const second = await saveAndDryRun(page);
     expect(second).toBeGreaterThan(runId);
     await processQueue(page);
