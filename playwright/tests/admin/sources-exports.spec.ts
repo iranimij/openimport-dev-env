@@ -111,7 +111,7 @@ test.describe.serial('OpenImport sources and exports', () => {
     await page.locator('.fieldset-wrapper-title', { hasText: '6 · When' }).click();
     await page.locator('select[name="schedule_preset"]').selectOption('custom');
     await page.locator('input[name="schedule_custom"]').fill('30 2 * * 1-5');
-    await page.locator('input[name="is_active"]').check();
+    await page.locator('input[name="is_active"]').check({ force: true }); // Magento toggle: the checkbox itself is off-screen
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.locator('.message-success')).toContainText('saved', { timeout: 60_000 });
     await page.goto('/admin/openimport/profile/index/');
