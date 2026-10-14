@@ -262,7 +262,15 @@ test.describe.serial('OpenImport admin', () => {
     await page.keyboard.press('Tab');
     await page.keyboard.type('sku');
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('combobox', { name: 'Store view' }).last()).toBeFocused();
+    try {
+      await expect(page.getByRole('combobox', { name: 'Store view' }).last()).toBeFocused();
+    } catch (error) {
+      const active = await page.evaluate(() => (document.activeElement as HTMLElement | null)?.outerHTML.slice(0, 400) ?? '(none)');
+      const text = `After typing the field code and Tab, focus is on: ${active}\nConsole:\n${consoleLog.slice(-20).join('\n')}`;
+      mkdirSync(resolve(__dirname, '../../diagnostics'), { recursive: true });
+      writeFileSync(resolve(__dirname, '../../diagnostics/keyboard.txt'), text);
+      throw new Error(text);
+    }
     await page.keyboard.press('Tab');
     await expect(page.getByRole('combobox', { name: 'Column of the file' }).last()).toBeFocused();
     await page.keyboard.press('Tab');
