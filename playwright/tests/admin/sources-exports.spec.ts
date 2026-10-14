@@ -68,13 +68,13 @@ test.describe.serial('OpenImport sources and exports', () => {
     const violations = collectCspViolations(page);
     await openNewProfile(page, `URL ${suffix}`, 'openimport_stock_price');
     await page.locator('select[name="source_type"]').selectOption('url');
-    await page.locator('input[name="source_config[url]"]').fill(`${services.filesUrl}/stock-de.csv`);
+    await page.locator('input[name="source_config[url]"]:visible').fill(`${services.filesUrl}/stock-de.csv`);
     await testConnection(page, 'Downloaded stock-de.csv');
 
     // Private addresses are refused unless allowed (the fixture allows its own services only).
-    await page.locator('input[name="source_config[url]"]').fill('http://169.254.169.254/latest/meta-data/');
+    await page.locator('input[name="source_config[url]"]:visible').fill('http://169.254.169.254/latest/meta-data/');
     await testConnection(page, 'private or local address');
-    await page.locator('input[name="source_config[url]"]').fill(`${services.filesUrl}/stock-de.csv`);
+    await page.locator('input[name="source_config[url]"]:visible').fill(`${services.filesUrl}/stock-de.csv`);
 
     // "Test connection" also loads the first rows, so the mapping step can auto-match.
     await expect(page.locator('.openimport-sample table')).toBeVisible({ timeout: 30_000 });
@@ -91,15 +91,15 @@ test.describe.serial('OpenImport sources and exports', () => {
   test('an SFTP folder as source with a file pattern', async ({ page }) => {
     await openNewProfile(page, `SFTP ${suffix}`, 'catalog_product');
     await page.locator('select[name="source_type"]').selectOption('sftp');
-    await page.locator('input[name="source_config[host]"]').fill(services.sftpHost);
-    await page.locator('input[name="source_config[port]"]').fill(services.sftpPort);
-    await page.locator('input[name="source_config[username]"]').fill('openimport');
-    await page.locator('input[name="source_config[password]"]').fill('openimport-sftp');
-    await page.locator('input[name="source_config[path]"]').fill('fixtures');
-    await page.locator('input[name="source_config[pattern]"]').fill('products-*.csv');
+    await page.locator('input[name="source_config[host]"]:visible').fill(services.sftpHost);
+    await page.locator('input[name="source_config[port]"]:visible').fill(services.sftpPort);
+    await page.locator('input[name="source_config[username]"]:visible').fill('openimport');
+    await page.locator('input[name="source_config[password]"]:visible').fill('openimport-sftp');
+    await page.locator('input[name="source_config[path]"]:visible').fill('fixtures');
+    await page.locator('input[name="source_config[pattern]"]:visible').fill('products-*.csv');
     await testConnection(page, /the next run reads products-small\.csv/);
 
-    await page.locator('input[name="source_config[password]"]').fill('wrong');
+    await page.locator('input[name="source_config[password]"]:visible').fill('wrong');
     await testConnection(page, 'login was refused');
   });
 

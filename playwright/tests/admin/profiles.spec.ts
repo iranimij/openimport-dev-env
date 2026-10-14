@@ -27,6 +27,11 @@ async function openNewProfile(page: Page, name: string, entity: string): Promise
   consoleLog.length = 0;
   page.on('console', (message) => consoleLog.push(`${message.type()}: ${message.text()}`));
   page.on('pageerror', (error) => consoleLog.push(`pageerror: ${error.message}`));
+  page.on('response', async (response) => {
+    if (response.url().includes('/openimport/profile/fields')) {
+      lastFields = (await response.text().catch(() => '')).slice(0, 1500);
+    }
+  });
   await page.goto('/admin/openimport/profile/new/');
   await expect(page.locator('input[name="name"]')).toBeVisible({ timeout: 60_000 });
   await page.locator('input[name="name"]').fill(name);
@@ -34,6 +39,7 @@ async function openNewProfile(page: Page, name: string, entity: string): Promise
 }
 
 const consoleLog: string[] = [];
+let lastFields = '';
 
 async function upload(page: Page, file: string | { name: string; mimeType: string; buffer: Buffer }): Promise<void> {
   const response = page.waitForResponse((r) => r.url().includes('/openimport/profile/upload'), { timeout: 60_000 });
@@ -71,7 +77,13 @@ async function mappingRow(page: Page, field: string, store = '') {
     const storeSelect = selects.length > 3 ? selects[1] as HTMLSelectElement : null;
     return input?.value === wanted.field && (storeSelect === null || storeSelect.value === wanted.store);
   }), { field, store });
-  expect(index, `mapping row for ${field}`).toBeGreaterThanOrEqual(0);
+  if (index < 0) {
+    const html = await page.locator('.openimport-mapping').innerHTML().catch(() => '(no .openimport-mapping)');
+    const text = `No mapping row for ${field}.\nConsole:\n${consoleLog.slice(-20).join('\n')}\nFields answer: ${lastFields}\nMapping: ${html.slice(0, 3000)}`;
+    mkdirSync(resolve(__dirname, '../../diagnostics'), { recursive: true });
+    writeFileSync(resolve(__dirname, '../../diagnostics/mapping-row.txt'), text);
+    throw new Error(text);
+  }
   return rows.nth(index);
 }
 
