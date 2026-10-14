@@ -178,6 +178,8 @@ test.describe.serial('OpenImport sources and exports', () => {
   test('German admin locale: grids and the form are translated', async ({ page }) => {
     const user = adminCredentials().user.replace(/'/g, "''");
     sql(`UPDATE admin_user SET interface_locale = 'de_DE' WHERE username = '${user}'`);
+    // Magento caches UI component labels per configuration, not per locale (core behaviour): clean it.
+    magento('cache:clean', 'config');
     try {
       await page.goto('/admin/openimport/profile/index/');
       const grid = page.locator('.data-grid').filter({ has: page.locator('tbody td') }).first();
@@ -188,6 +190,7 @@ test.describe.serial('OpenImport sources and exports', () => {
       await expect(page.getByRole('button', { name: 'Feld hinzufügen' })).toBeVisible();
     } finally {
       sql(`UPDATE admin_user SET interface_locale = 'en_US' WHERE username = '${user}'`);
+      magento('cache:clean', 'config');
     }
   });
 });
