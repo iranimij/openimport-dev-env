@@ -182,7 +182,7 @@ test.describe.serial('OpenImport sources and exports', () => {
       await page.goto('/admin/openimport/profile/index/');
       const grid = page.locator('.data-grid').filter({ has: page.locator('tbody td') }).first();
       await expect(grid).toContainText('Letzter Lauf', { timeout: 60_000 });
-      await expect(page.getByRole('button', { name: 'Neues Profil' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Profil hinzufügen' })).toBeVisible();
       await page.goto('/admin/openimport/profile/new/');
       await expect(page.locator('input[name="name"]')).toBeVisible({ timeout: 60_000 });
       await expect(page.getByRole('button', { name: 'Feld hinzufügen' })).toBeVisible();
