@@ -1,7 +1,7 @@
 import { Page } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { test, expect, magento, services, collectCspViolations } from '../fixture';
+import { test, expect, magento, services, collectCspViolations, seedProducts } from '../fixture';
 
 /**
  * M3 scenarios: a URL source and an SFTP source with "Test connection", a schedule, and exports (products to
@@ -125,6 +125,7 @@ test.describe.serial('OpenImport sources and exports', () => {
 
   test('products to Excel: every column, a renamed price, download from the run page, then SFTP', async ({ page }) => {
     const violations = collectCspViolations(page);
+    expect(seedProducts(suffix), 'seed products through the CLI').toMatch(/success|partial/i);
     await openNewProfile(page, `Export ${suffix}`, 'catalog_product', 'export');
     await expect(page.locator('select[name="source_type"]')).toBeHidden();
     await page.locator('select[name="format"]').selectOption('xlsx');

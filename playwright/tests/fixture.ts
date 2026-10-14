@@ -1,6 +1,6 @@
 import { test as base, expect, Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, copyFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
@@ -17,6 +17,42 @@ export const magentoRoot = shell ? (process.env.MAGENTO_ROOT ?? repoRoot) : repo
 export const services = shell
   ? { filesUrl: 'http://localhost:8081', sftpHost: 'localhost', sftpPort: '2222' }
   : { filesUrl: 'http://files', sftpHost: 'sftp', sftpPort: '22' };
+
+/**
+ * Imports the small product file through the CLI (profile JSON + openimport:run), so a spec that needs the
+ * OI-FIX products does not depend on another spec having created them. Returns the run output.
+ */
+export function seedProducts(suffix: string): string {
+  const name = `Seed ${suffix}`;
+  const profile = {
+    openimport: 1,
+    profiles: [{
+      name,
+      direction: 'import',
+      entity: 'catalog_product',
+      is_active: false,
+      source_type: 'upload',
+      format: 'auto',
+      behavior: 'add_update',
+      on_error: 'skip',
+      allowed_errors: 10,
+      mapping: [
+        { target: 'sku', source: 'sku', transforms: [] },
+        { target: 'name', source: 'name', transforms: [] },
+        { target: 'price', source: 'price', transforms: [] },
+        { target: 'qty', source: 'qty', transforms: [] },
+        { target: 'attribute_set_code', static: 'Default', transforms: [] },
+        { target: 'product_type', static: 'simple', transforms: [] },
+        { target: 'product_websites', static: 'base', transforms: [] },
+      ],
+    }],
+  };
+  mkdirSync(resolve(magentoRoot, 'var'), { recursive: true });
+  writeFileSync(resolve(magentoRoot, `var/openimport-seed-${suffix}.json`), JSON.stringify(profile));
+  copyFileSync(resolve(repoRoot, 'fixtures/files/products-small.csv'), resolve(magentoRoot, `var/openimport-seed-${suffix}.csv`));
+  magento('openimport:profiles:import', `var/openimport-seed-${suffix}.json`);
+  return magento('openimport:run', name, '--file', `var/openimport-seed-${suffix}.csv`);
+}
 
 /** Runs SQL and returns tab-separated rows. */
 export function sql(query: string): string[][] {
