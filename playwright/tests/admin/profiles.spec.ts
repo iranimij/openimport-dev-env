@@ -78,8 +78,11 @@ async function mappingRow(page: Page, field: string, store = '') {
     return input?.value === wanted.field && (storeSelect === null || storeSelect.value === wanted.store);
   }), { field, store });
   if (index < 0) {
-    const html = await page.locator('.openimport-mapping').innerHTML().catch(() => '(no .openimport-mapping)');
-    const text = `No mapping row for ${field}.\nConsole:\n${consoleLog.slice(-20).join('\n')}\nFields answer: ${lastFields}\nMapping: ${html.slice(0, 3000)}`;
+    const seen = await rows.evaluateAll((elements) => elements.map((row) => {
+      const input = row.querySelector('input.openimport-mapping-other') as HTMLInputElement | null;
+      return `field=${input?.value ?? '-'} selects=${Array.from(row.querySelectorAll('select')).map((s) => (s as HTMLSelectElement).value).join('|')}`;
+    }));
+    const text = `No mapping row for ${field}.\nRows:\n${seen.join('\n')}\nConsole:\n${consoleLog.slice(-20).join('\n')}\nFields answer: ${lastFields.slice(0, 600)}`;
     mkdirSync(resolve(__dirname, '../../diagnostics'), { recursive: true });
     writeFileSync(resolve(__dirname, '../../diagnostics/mapping-row.txt'), text);
     throw new Error(text);
