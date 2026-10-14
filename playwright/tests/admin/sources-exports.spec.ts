@@ -1,7 +1,7 @@
 import { Page } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { test, expect, magento, services, collectCspViolations, seedProducts } from '../fixture';
+import { test, expect, magento, services, collectCspViolations, seedProducts, sql, adminCredentials } from '../fixture';
 
 /**
  * M3 scenarios: a URL source and an SFTP source with "Test connection", a schedule, and exports (products to
@@ -173,5 +173,21 @@ test.describe.serial('OpenImport sources and exports', () => {
     await processQueue(page);
     await expect(page.locator('.openimport-run')).toContainText('Uploaded to', { timeout: 60_000 });
     expect(violations).toEqual([]);
+  });
+
+  test('German admin locale: grids and the form are translated', async ({ page }) => {
+    const user = adminCredentials().user.replace(/'/g, "''");
+    sql(`UPDATE admin_user SET interface_locale = 'de_DE' WHERE username = '${user}'`);
+    try {
+      await page.goto('/admin/openimport/profile/index/');
+      const grid = page.locator('.data-grid').filter({ has: page.locator('tbody td') }).first();
+      await expect(grid).toContainText('Letzter Lauf', { timeout: 60_000 });
+      await expect(page.getByRole('button', { name: 'Neues Profil' })).toBeVisible();
+      await page.goto('/admin/openimport/profile/new/');
+      await expect(page.locator('input[name="name"]')).toBeVisible({ timeout: 60_000 });
+      await expect(page.getByRole('button', { name: 'Feld hinzufügen' })).toBeVisible();
+    } finally {
+      sql(`UPDATE admin_user SET interface_locale = 'en_US' WHERE username = '${user}'`);
+    }
   });
 });
