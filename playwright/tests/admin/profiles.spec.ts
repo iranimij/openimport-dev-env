@@ -24,11 +24,16 @@ async function noSeriousAxeViolations(page: Page, selector = '#anchor-content'):
 }
 
 async function openNewProfile(page: Page, name: string, entity: string): Promise<void> {
+  consoleLog.length = 0;
+  page.on('console', (message) => consoleLog.push(`${message.type()}: ${message.text()}`));
+  page.on('pageerror', (error) => consoleLog.push(`pageerror: ${error.message}`));
   await page.goto('/admin/openimport/profile/new/');
   await expect(page.locator('input[name="name"]')).toBeVisible({ timeout: 60_000 });
   await page.locator('input[name="name"]').fill(name);
   await page.locator('select[name="entity"]').selectOption(entity);
 }
+
+const consoleLog: string[] = [];
 
 async function upload(page: Page, file: string | { name: string; mimeType: string; buffer: Buffer }): Promise<void> {
   const response = page.waitForResponse((r) => r.url().includes('/openimport/profile/upload'), { timeout: 60_000 });
@@ -37,7 +42,12 @@ async function upload(page: Page, file: string | { name: string; mimeType: strin
   const body = await answer.text();
   expect(answer.status(), `upload answer: ${body.slice(0, 800)}`).toBe(200);
   expect(body.startsWith('{') && !('error' in JSON.parse(body)), `upload answer: ${body.slice(0, 800)}`).toBe(true);
-  await expect(page.locator('.openimport-upload .admin__field-note strong')).not.toBeEmpty({ timeout: 30_000 });
+  try {
+    await expect(page.locator('.openimport-upload .admin__field-note strong')).not.toBeEmpty({ timeout: 30_000 });
+  } catch (error) {
+    const html = await page.locator('.openimport-upload').innerHTML();
+    throw new Error(`The upload field did not show the file name.\nConsole: ${consoleLog.slice(-20).join('\n')}\nAnswer: ${body.slice(0, 1500)}\nField: ${html.slice(0, 3000)}`);
+  }
   await expect(page.locator('.openimport-sample table')).toBeVisible({ timeout: 30_000 });
 }
 
