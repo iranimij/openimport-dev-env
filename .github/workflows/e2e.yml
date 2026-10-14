@@ -121,6 +121,17 @@ jobs:
           npx playwright install --with-deps chromium
           ../.github/ci/logged.sh Playwright npx playwright test
 
+      - name: Diagnostics
+        if: failure()
+        run: |
+          # Specs write what they saw into playwright/diagnostics/*.txt; one notice each (readable through the API).
+          for f in playwright/diagnostics/*.txt; do
+            [ -f "$f" ] || continue
+            echo "::notice title=$(basename "$f")::$(head -c 3800 "$f" | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}')"
+          done
+          tail -n 80 "$MAGENTO_ROOT/var/log/system.log" 2>/dev/null | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}' | sed 's/^/::notice title=system.log::/'; echo
+          tail -n 60 "$MAGENTO_ROOT/var/log/openimport.log" 2>/dev/null | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}' | sed 's/^/::notice title=openimport.log::/'; echo
+
       - name: Reports
         if: always()
         uses: actions/upload-artifact@v7

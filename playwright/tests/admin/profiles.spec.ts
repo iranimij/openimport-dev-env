@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { Page } from '@playwright/test';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { test, expect, magento, sql, collectCspViolations } from '../fixture';
 
@@ -46,7 +46,10 @@ async function upload(page: Page, file: string | { name: string; mimeType: strin
     await expect(page.locator('.openimport-upload .admin__field-note strong')).not.toBeEmpty({ timeout: 20_000 });
   } catch (error) {
     const html = await page.locator('.openimport-upload').innerHTML();
-    throw new Error(`The upload field did not show the file name.\nConsole: ${consoleLog.slice(-20).join('\n')}\nAnswer: ${body.slice(0, 1500)}\nField: ${html.slice(0, 3000)}`);
+    const text = `The upload field did not show the file name.\nConsole:\n${consoleLog.slice(-30).join('\n')}\nAnswer: ${body.slice(0, 1500)}\nField: ${html.slice(0, 2000)}`;
+    mkdirSync(resolve(__dirname, '../../diagnostics'), { recursive: true });
+    writeFileSync(resolve(__dirname, '../../diagnostics/upload.txt'), text);
+    throw new Error(text);
   }
   await expect(page.locator('.openimport-sample table')).toBeVisible({ timeout: 30_000 });
 }
