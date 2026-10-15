@@ -130,7 +130,8 @@ test.describe.serial('OpenImport admin', () => {
     const runId = await saveAndDryRun(page);
     await processQueue(page);
     await expect(page.locator('.openimport-run')).toContainText('What would change');
-    await expect(page.locator('.openimport-count', { hasText: 'Will be created' })).toContainText('3');
+    const dryErrors = sql(`SELECT CONCAT(source_row, ' ', field, ': ', message) FROM openimport_run_error WHERE run_id = ${runId} LIMIT 5`).map((row) => row[0]).join(' | ');
+    await expect(page.locator('.openimport-count', { hasText: 'Will be created' }), `dry run ${runId} errors: ${dryErrors}`).toContainText('3');
     await expect(page.locator('.openimport-run table').first()).toContainText('Regenjacke');
     await noSeriousAxeViolations(page);
 
@@ -160,15 +161,18 @@ test.describe.serial('OpenImport admin', () => {
       }
       await price.locator('.openimport-add-transform').getByRole('button', { name: 'Add' }).click();
     };
-    await add('Decimal comma → dot');
+    // The file writes prices with decimal commas: Auto-match added the transform already.
+    await expect(price.locator('.openimport-chip')).toHaveCount(1);
+    await expect(price.locator('.openimport-chip').first()).toContainText('Decimal comma');
+    await expect(page.locator('.openimport-mapping .message-notice')).toContainText('Decimal commas found');
     await add('Change price by %', ['15']);
     await add('Round', ['2', 'ending', '.99']);
     await expect(price.locator('.openimport-chip')).toHaveCount(3);
     // Reorder with buttons only (no drag): move the rounding up and back down.
     await price.locator('.openimport-chip').nth(2).getByRole('button', { name: 'Move up' }).click();
-    await expect(price.locator('.openimport-chip').nth(1)).toContainText('round');
+    await expect(price.locator('.openimport-chip').nth(1)).toContainText('Round');
     await price.locator('.openimport-chip').nth(1).getByRole('button', { name: 'Move down' }).click();
-    await expect(price.locator('.openimport-chip').nth(2)).toContainText('round');
+    await expect(price.locator('.openimport-chip').nth(2)).toContainText('Round');
 
     await saveAndDryRun(page);
     await processQueue(page);
