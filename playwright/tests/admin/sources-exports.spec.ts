@@ -106,11 +106,32 @@ test.describe.serial('OpenImport sources and exports', () => {
     await testConnection(page, 'login was refused');
   });
 
+  test('an SFTP login with a private key pasted into its multi-line field', async ({ page }) => {
+    test.skip(!process.env.SFTP_KEY_FILE, 'SFTP_KEY_FILE is set where the SFTP server knows the public key (CI)');
+    const key = readFileSync(process.env.SFTP_KEY_FILE as string, 'utf8');
+    await openNewProfile(page, `SFTP key ${suffix}`, 'catalog_product');
+    await page.locator('select[name="source_type"]').selectOption('sftp');
+    await page.locator('input[name="source_config[host]"]:visible').fill(services.sftpHost);
+    await page.locator('input[name="source_config[port]"]:visible').fill(services.sftpPort);
+    await page.locator('input[name="source_config[username]"]:visible').fill('openimport');
+    await page.locator('select[name="source_config[auth_sftp]"]:visible').selectOption('key');
+    await expect(page.locator('input[name="source_config[password]"]:visible')).toHaveCount(0);
+    const field = page.locator('textarea[name="source_config[private_key]"]');
+    await field.fill(key);
+    await expect(field).toHaveValue(key); // line breaks kept
+    await page.locator('input[name="source_config[path]"]:visible').fill('fixtures');
+    await page.locator('input[name="source_config[pattern]"]:visible').fill('products-*.csv');
+    await testConnection(page, /the next run reads products-small\.csv/);
+  });
+
   test('a schedule is saved and shown in the grid', async ({ page }) => {
     const name = `Nightly ${suffix}`;
     await openNewProfile(page, name, 'catalog_product');
     await page.getByRole('button', { name: 'Add field' }).click();
     await page.locator('.openimport-mapping-table tbody tr').last().getByRole('textbox', { name: 'Other Magento field (code)' }).fill('sku');
+    // A schedule needs a source that changes by itself (an upload would be imported again and again).
+    await page.locator('select[name="source_type"]').selectOption('folder');
+    await page.locator('input[name="source_config[path]"]:visible').fill('incoming');
     await page.locator('.fieldset-wrapper-title', { hasText: '6 · When' }).click();
     await page.locator('select[name="schedule_preset"]').selectOption('custom');
     await page.locator('input[name="schedule_custom"]').fill('30 2 * * 1-5');

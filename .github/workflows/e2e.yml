@@ -62,7 +62,12 @@ jobs:
 
       - name: Fixture file services (SFTP, HTTP)
         run: |
+          # A key pair for the private-key login; the server knows the public key, the spec pastes the private one.
+          ssh-keygen -q -t ed25519 -N '' -C openimport-e2e -f "$RUNNER_TEMP/sftp_key"
+          chmod 644 "$RUNNER_TEMP/sftp_key.pub"
+          echo "SFTP_KEY_FILE=$RUNNER_TEMP/sftp_key" >> "$GITHUB_ENV"
           docker run -d --name sftp -p 2222:22 -v "$PWD/fixtures/files:/home/openimport/fixtures:ro" \
+            -v "$RUNNER_TEMP/sftp_key.pub:/home/openimport/.ssh/keys/e2e.pub:ro" \
             atmoz/sftp:alpine openimport:openimport-sftp:1001:1001:out
           docker run -d --name files -p 8081:80 -v "$PWD/fixtures/files:/usr/share/nginx/html:ro" \
             -v "$PWD/.warden/files.conf:/etc/nginx/conf.d/default.conf:ro" \
