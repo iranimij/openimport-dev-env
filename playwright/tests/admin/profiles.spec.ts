@@ -195,7 +195,8 @@ test.describe.serial('OpenImport admin', () => {
     await price.locator('.openimport-add-transform').getByRole('button', { name: 'Add' }).click();
     await page.locator('.fieldset-wrapper-title', { hasText: '5 · Rules' }).click();
     await page.locator('select[name="on_error"]').selectOption('skip');
-    await page.locator('input[name="allowed_errors"]').fill('10');
+    // "Errors allowed" only applies to "Stop".
+    await expect(page.locator('input[name="allowed_errors"]')).toBeHidden();
 
     await saveAndDryRun(page);
     await processQueue(page);
@@ -223,14 +224,88 @@ test.describe.serial('OpenImport admin', () => {
     await saveAndDryRun(page);
     await processQueue(page);
     await expect(page.locator('.openimport-count', { hasText: 'Will be deleted' })).toContainText('3');
-    await page.locator('#openimport-confirmation').fill('delete');
-    await page.getByRole('button', { name: 'Run for real' }).click();
-    await expect(page.locator('.message-error')).toContainText('Type DELETE to confirm.');
-    await page.locator('#openimport-confirmation').fill('DELETE');
-    await page.getByRole('button', { name: 'Run for real' }).click();
+    const runForReal = page.getByRole('button', { name: 'Run for real' });
+    await expect(runForReal).toBeDisabled();
+    await page.locator('#openimport-confirmation').fill('dele');
+    await expect(runForReal).toBeDisabled();
+    await page.locator('#openimport-confirmation').fill('delete'); // lower case is accepted
+    await expect(runForReal).toBeEnabled();
+    await runForReal.click();
     await processQueue(page);
     await expect(page.locator('.openimport-run')).toContainText('Success');
     expect(sql("SELECT COUNT(*) FROM catalog_product_entity WHERE sku LIKE 'OI-FIX-%'")).toEqual([['0']]);
+  });
+
+  test('every row action of the profiles grid', async ({ page }) => {
+    const name = `Row actions ${suffix}`;
+    await openNewProfile(page, name, 'catalog_product');
+    await upload(page, resolve(files, 'products-small.csv'));
+    await page.getByRole('button', { name: 'Add field' }).click();
+    const row = page.locator('.openimport-mapping-table tbody tr').last();
+    await row.getByRole('textbox', { name: 'Other Magento field (code)' }).fill('sku');
+    await row.getByRole('combobox', { name: 'Column of the file' }).selectOption('sku');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.locator('.message-success')).toContainText('saved', { timeout: 60_000 });
+
+    const gridRow = async () => {
+      await page.goto('/admin/openimport/profile/index/');
+      const search = page.locator('.data-grid-search-control-wrap input');
+      await search.fill(name);
+      await search.press('Enter');
+      // Exactly this profile, not its copy.
+      const found = page.locator('.data-grid tbody tr').filter({ has: page.getByRole('cell', { name, exact: true }) }).first();
+      await expect(found).toBeVisible({ timeout: 60_000 });
+      await found.getByText('Select', { exact: true }).click();
+      return found;
+    };
+
+    // Dry run and Duplicate are POST actions without a dialog (they answered 404 as plain links in 1.1.1).
+    await (await gridRow()).getByText('Dry run', { exact: true }).click();
+    await expect(page).toHaveURL(/openimport\/run\/view\/id\/\d+/, { timeout: 60_000 });
+    await expect(page.locator('.openimport-run')).toContainText('Dry run');
+
+    await (await gridRow()).getByText('Duplicate', { exact: true }).click();
+    await expect(page.locator('.message-success')).toContainText(`Copied to "${name} (copy)"`, { timeout: 60_000 });
+
+    await (await gridRow()).getByText('Run now', { exact: true }).click();
+    const dialog = page.locator('.modal-popup._show');
+    await expect(dialog).toContainText('products-small.csv');
+    await expect(dialog).toContainText('dry run');
+    await expect(dialog.getByRole('button', { name: 'Run now' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+
+    await (await gridRow()).getByText('Delete', { exact: true }).click();
+    await expect(page.locator('.modal-popup._show')).toContainText('will be deleted');
+    await page.locator('.modal-popup._show').getByRole('button', { name: 'Delete profile' }).click();
+    await expect(page.locator('.message-success')).toContainText('deleted', { timeout: 60_000 });
+  });
+
+  test('an export profile shows only export settings', async ({ page }) => {
+    await page.goto('/admin/openimport/profile/new/');
+    await expect(page.locator('input[name="name"]')).toBeVisible({ timeout: 60_000 });
+    await page.locator('select[name="direction"]').selectOption('export');
+    await page.locator('select[name="entity"]').selectOption('catalog_product');
+    await expect(page.locator('select[name="format"] option[value="auto"]')).toHaveCount(0);
+    await expect(page.locator('input[name="format_options[sheet]"]')).toBeHidden();
+    await expect(page.locator('input[name="format_options[record_path]"]')).toBeHidden();
+    await expect(page.locator('.openimport-sample')).toBeHidden();
+    await page.locator('.fieldset-wrapper-title', { hasText: '5 · Rules' }).click();
+    await expect(page.locator('select[name="filter_mode"]')).toBeVisible();
+    for (const field of ['select[name="behavior"]', 'select[name="on_error"]', 'input[name="safety_threshold"]']) {
+      await expect(page.locator(field)).toBeHidden();
+    }
+    await expect(page.locator('select[name="filter_mode"] option').first()).toHaveText('Export only the records that match');
+  });
+
+  test('a failed save opens the step and names every wrong part at the field', async ({ page }) => {
+    await openNewProfile(page, `Bad cron ${suffix}`, 'catalog_product');
+    await page.locator('.fieldset-wrapper-title', { hasText: '6 · When' }).click();
+    await page.locator('select[name="schedule_preset"]').selectOption('custom');
+    await page.locator('input[name="schedule_custom"]').fill('61 25 * * *');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    const field = page.locator('[data-index="schedule_custom"]');
+    await expect(field).toContainText('The minute "61" is outside 0-59. The hour "25" is outside 0-23.', { timeout: 60_000 });
+    await expect(page.locator('input[name="schedule_custom"]')).toBeVisible();
   });
 
   test('grids, keyboard and accessibility', async ({ page }) => {
