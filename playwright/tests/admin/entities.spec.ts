@@ -36,10 +36,18 @@ async function saveDryRunAndProcess(page: Page): Promise<number> {
 }
 
 async function runForReal(page: Page): Promise<void> {
+  const before = page.url();
   await page.getByRole('button', { name: 'Run for real' }).click();
-  await page.waitForURL(/openimport\/run\/view\/id\/(\d+)/, { timeout: 60_000 });
+  await page.waitForURL((url) => url.toString() !== before && /openimport\/run\/view\/id\/\d+/.test(url.toString()), { timeout: 60_000 });
   magento('openimport:queue:run');
   await page.reload();
+}
+
+/** The run succeeded; otherwise the run's own errors in the failure message. */
+async function expectSuccess(page: Page): Promise<void> {
+  const runId = Number(page.url().match(/\/id\/(\d+)/)![1]);
+  const errors = sql(`SELECT CONCAT(source_row, ' ', field, ': ', message) FROM openimport_run_error WHERE run_id = ${runId} LIMIT 10`).map((row) => row[0]).join(' | ');
+  await expect(page.locator('.openimport-run'), `run ${runId} errors: ${errors}`).toContainText(/Success|Erfolgreich/, { timeout: 60_000 });
 }
 
 test.describe.serial('OpenImport 1.1 entities', () => {
@@ -57,7 +65,7 @@ test.describe.serial('OpenImport 1.1 entities', () => {
     expect(sql(`SELECT COUNT(*) FROM catalog_category_entity_varchar WHERE value = 'OI ${suffix}'`)).toEqual([['0']]);
 
     await runForReal(page);
-    await expect(page.locator('.openimport-run')).toContainText(/Success|Erfolgreich/, { timeout: 60_000 });
+    await expectSuccess(page);
     const german = sql(`SELECT v.value FROM catalog_category_entity_varchar v JOIN store s ON s.store_id = v.store_id AND s.code = 'de' JOIN eav_attribute a ON a.attribute_id = v.attribute_id AND a.attribute_code = 'name' JOIN catalog_category_entity_varchar d ON d.entity_id = v.entity_id AND d.store_id = 0 AND d.attribute_id = a.attribute_id AND d.value = 'Shoes'`);
     expect(german.map((row) => row[0])).toContain('Schuhe');
     expect(violations).toEqual([]);
@@ -70,7 +78,7 @@ test.describe.serial('OpenImport 1.1 entities', () => {
     await saveDryRunAndProcess(page);
     await expect(page.locator('.openimport-run')).toContainText('Dry run', { timeout: 60_000 });
     await runForReal(page);
-    await expect(page.locator('.openimport-run')).toContainText(/Success|Erfolgreich/, { timeout: 60_000 });
+    await expectSuccess(page);
     expect(sql(`SELECT content FROM cms_block WHERE identifier = 'oi-${suffix}-promo'`)).toEqual([['<p>Free shipping</p>']]);
   });
 });
