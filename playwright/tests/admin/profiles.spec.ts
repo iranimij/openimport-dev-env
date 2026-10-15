@@ -113,8 +113,10 @@ test.describe.serial('OpenImport admin', () => {
     await upload(page, resolve(files, 'products-small.csv'));
     await expect(page.locator('.openimport-sample thead')).toContainText('name_de');
 
+    // The first form of the run builds its static files: give the fields answer time.
+    await expect(page.getByRole('button', { name: 'Auto-match' })).toBeEnabled({ timeout: 30_000 });
     await page.getByRole('button', { name: 'Auto-match' }).click();
-    await expect(page.locator('.openimport-mapping .message-notice')).toContainText('matched');
+    await expect(page.locator('.openimport-mapping .message-notice')).toContainText('matched', { timeout: 30_000 });
     await page.getByRole('button', { name: 'Add required fields' }).click();
     for (const [field, value] of [['attribute_set_code', 'Default'], ['product_type', 'simple'], ['product_websites', 'base']]) {
       const row = await mappingRow(page, field);
