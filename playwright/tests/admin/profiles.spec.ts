@@ -249,7 +249,7 @@ test.describe.serial('OpenImport admin', () => {
 
     const gridRow = async () => {
       await page.goto('/admin/openimport/profile/index/');
-      const search = page.locator('.data-grid-search-control-wrap input');
+      const search = page.locator('.data-grid-search-control-wrap input').first(); // the sticky header has a copy
       await search.fill(name);
       await search.press('Enter');
       // Exactly this profile, not its copy.
@@ -278,6 +278,11 @@ test.describe.serial('OpenImport admin', () => {
     await expect(page.locator('.modal-popup._show')).toContainText('will be deleted');
     await page.locator('.modal-popup._show').getByRole('button', { name: 'Delete profile' }).click();
     await expect(page.locator('.message-success')).toContainText('deleted', { timeout: 60_000 });
+    // The keyword stays in the grid's bookmark: clear it for the next tests.
+    const search = page.locator('.data-grid-search-control-wrap input').first();
+    await search.fill('');
+    await search.press('Enter');
+    await expect(page.locator('.admin__data-grid-filters-current._show')).toHaveCount(0, { timeout: 30_000 });
   });
 
   test('an export profile shows only export settings', async ({ page }) => {
