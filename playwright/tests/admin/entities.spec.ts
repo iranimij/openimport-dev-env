@@ -46,7 +46,10 @@ async function runForReal(page: Page): Promise<void> {
 /** The run succeeded; otherwise the run's own errors in the failure message. */
 async function expectSuccess(page: Page): Promise<void> {
   const runId = Number(page.url().match(/\/id\/(\d+)/)![1]);
-  const errors = sql(`SELECT CONCAT(source_row, ' ', field, ': ', message) FROM openimport_run_error WHERE run_id = ${runId} LIMIT 10`).map((row) => row[0]).join(' | ');
+  const errors = sql(`SELECT CONCAT(source_row, ' ', field, ': ', message) FROM openimport_run_error WHERE run_id = ${runId} LIMIT 10`).map((row) => row[0]).join(' | ')
+    // What Magento holds for this test's categories (a failed category run explains itself).
+    + ' || rewrites: ' + sql(`SELECT CONCAT(url_rewrite_id, ':', entity_type, '#', entity_id, ' ', request_path, ' s', store_id) FROM url_rewrite WHERE request_path LIKE 'oi-${suffix}%' ORDER BY url_rewrite_id LIMIT 20`).map((row) => row[0]).join(', ')
+    + ' || categories: ' + sql(`SELECT CONCAT(e.entity_id, ' ', e.path, ' L', e.level, ' ', v.store_id, '=', v.value) FROM catalog_category_entity e JOIN catalog_category_entity_varchar v ON v.entity_id = e.entity_id JOIN eav_attribute a ON a.attribute_id = v.attribute_id AND a.attribute_code IN ('name', 'url_key', 'url_path') WHERE e.entity_id >= (SELECT entity_id FROM catalog_category_entity_varchar WHERE value = 'OI ${suffix}' LIMIT 1) ORDER BY e.entity_id LIMIT 30`).map((row) => row[0]).join(', ');
   await expect(page.locator('.openimport-run'), `run ${runId} errors: ${errors}`).toContainText(/Success|Erfolgreich/, { timeout: 60_000 });
 }
 
