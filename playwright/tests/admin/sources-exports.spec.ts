@@ -115,7 +115,7 @@ test.describe.serial('OpenImport sources and exports', () => {
     await page.locator('input[name="source_config[port]"]:visible').fill(services.sftpPort);
     await page.locator('input[name="source_config[username]"]:visible').fill('openimport');
     await page.locator('select[name="source_config[auth_sftp]"]:visible').selectOption('key');
-    await expect(page.locator('input[name="source_config[password]"]')).toBeHidden();
+    await expect(page.locator('input[name="source_config[password]"]:visible')).toHaveCount(0);
     const field = page.locator('textarea[name="source_config[private_key]"]');
     await field.fill(key);
     await expect(field).toHaveValue(key); // line breaks kept

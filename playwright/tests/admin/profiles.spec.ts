@@ -195,8 +195,8 @@ test.describe.serial('OpenImport admin', () => {
     await price.locator('.openimport-add-transform').getByRole('button', { name: 'Add' }).click();
     await page.locator('.fieldset-wrapper-title', { hasText: '5 · Rules' }).click();
     await page.locator('select[name="on_error"]').selectOption('skip');
-    // "Errors allowed" only applies to "Stop".
-    await expect(page.locator('input[name="allowed_errors"]')).toBeHidden();
+    // Every row is bad: with Skip, "Errors allowed" decides whether the run counts as partial or failed.
+    await page.locator('input[name="allowed_errors"]').fill('10');
 
     await saveAndDryRun(page);
     await processQueue(page);
