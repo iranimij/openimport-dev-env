@@ -131,6 +131,7 @@ jobs:
           done
           tail -n 80 "$MAGENTO_ROOT/var/log/system.log" 2>/dev/null | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}' | sed 's/^/::notice title=system.log::/'; echo
           tail -n 60 "$MAGENTO_ROOT/var/log/openimport.log" 2>/dev/null | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}' | sed 's/^/::notice title=openimport.log::/'; echo
+          grep -n "OpenImport" -A25 "$MAGENTO_ROOT/var/log/exception.log" 2>/dev/null | tail -n 60 | cut -c1-400 | awk 'BEGIN{ORS=""}{gsub(/%/,"%25"); print $0 "%0A"}' | sed 's/^/::notice title=exception.log::/'; echo
           # One notice per failed test with its first error (the job log tail only shows the last failure).
           node -e '
             const r = require("./playwright/test-results.json"); const out = [];
