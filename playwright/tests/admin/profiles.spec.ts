@@ -340,6 +340,9 @@ test.describe.serial('OpenImport admin', () => {
   test('grids, keyboard and accessibility', async ({ page }) => {
     const violations = collectCspViolations(page);
     await page.goto('/admin/openimport/profile/index/');
+    // Two tables on the page: the grid and its sticky header copy; the one with rows is the grid.
+    const grid = page.locator('.data-grid').filter({ has: page.locator('tbody td') });
+    await expect(grid.first()).toBeVisible({ timeout: 60_000 });
     // A search from an earlier test can stay in the grid's bookmark: start without filters (core's filter chips are
     // not part of what this test checks).
     const clear = page.locator('.admin__data-grid-filters-current._show .action-clear').first();
@@ -347,8 +350,6 @@ test.describe.serial('OpenImport admin', () => {
       await clear.click();
       await expect(page.locator('.admin__data-grid-filters-current._show')).toHaveCount(0, { timeout: 30_000 });
     }
-    // Two tables on the page: the grid and its sticky header copy; the one with rows is the grid.
-    const grid = page.locator('.data-grid').filter({ has: page.locator('tbody td') });
     await expect(grid.first()).toContainText(productProfile, { timeout: 60_000 });
     await expect(grid.first()).toContainText('Run #');
     await noSeriousAxeViolations(page);
