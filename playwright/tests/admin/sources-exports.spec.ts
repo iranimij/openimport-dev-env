@@ -128,7 +128,7 @@ test.describe.serial('OpenImport sources and exports', () => {
     const name = `Nightly ${suffix}`;
     await openNewProfile(page, name, 'catalog_product');
     await page.getByRole('button', { name: 'Add field' }).click();
-    await page.locator('.openimport-mapping-table tbody tr').last().getByRole('textbox', { name: 'Other Magento field (code)' }).fill('sku');
+    await page.locator('.openimport-mapping-table tbody tr').last().getByRole('combobox', { name: 'Magento field' }).selectOption('sku');
     // A schedule needs a source that changes by itself (an upload would be imported again and again).
     await page.locator('select[name="source_type"]').selectOption('folder');
     await page.locator('input[name="source_config[path]"]:visible').fill('incoming');
