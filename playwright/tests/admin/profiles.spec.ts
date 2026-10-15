@@ -215,7 +215,7 @@ test.describe.serial('OpenImport admin', () => {
     await upload(page, resolve(files, 'products-small.csv'));
     await page.getByRole('button', { name: 'Add field' }).click();
     const row = page.locator('.openimport-mapping-table tbody tr').last();
-    await row.getByRole('textbox', { name: 'Other Magento field (code)' }).fill('sku');
+    await row.getByRole('combobox', { name: 'Magento field' }).selectOption('sku');
     await row.getByRole('combobox', { name: 'Column of the file' }).selectOption('sku');
     await page.locator('.fieldset-wrapper-title', { hasText: '5 · Rules' }).click();
     await page.locator('select[name="behavior"]').selectOption('delete');
@@ -242,7 +242,7 @@ test.describe.serial('OpenImport admin', () => {
     await upload(page, resolve(files, 'products-small.csv'));
     await page.getByRole('button', { name: 'Add field' }).click();
     const row = page.locator('.openimport-mapping-table tbody tr').last();
-    await row.getByRole('textbox', { name: 'Other Magento field (code)' }).fill('sku');
+    await row.getByRole('combobox', { name: 'Magento field' }).selectOption('sku');
     await row.getByRole('combobox', { name: 'Column of the file' }).selectOption('sku');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.locator('.message-success')).toContainText('saved', { timeout: 60_000 });
@@ -313,6 +313,30 @@ test.describe.serial('OpenImport admin', () => {
     await expect(page.locator('input[name="schedule_custom"]')).toBeVisible();
   });
 
+  test('a schedule every day at a time shows its next runs; the profile downloads as JSON', async ({ page }) => {
+    const name = `Daily ${suffix}`;
+    await openNewProfile(page, name, 'catalog_product');
+    await page.locator('select[name="source_type"]').selectOption('folder');
+    await page.locator('input[name="source_config[path]"]:visible').fill('incoming');
+    await page.getByRole('button', { name: 'Add field' }).click();
+    await page.locator('.openimport-mapping-table tbody tr').last().getByRole('combobox', { name: 'Magento field' }).selectOption('sku');
+    await page.locator('.fieldset-wrapper-title', { hasText: '6 · When' }).click();
+    await page.locator('select[name="schedule_preset"]').selectOption('daily');
+    await page.locator('input[name="schedule_time"]').fill('05:30');
+    await expect(page.locator('.openimport-next-runs li')).toHaveCount(3, { timeout: 30_000 });
+    await expect(page.locator('.openimport-next-runs li').first()).toContainText('5:30');
+    await expect(page.locator('.fieldset-wrapper[data-index="when"] .openimport-step-summary')).toContainText('Every day at 05:30');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.locator('.message-success')).toContainText('saved', { timeout: 60_000 });
+    expect(magento('openimport:profile:list')).toContain('30 5 * * *');
+
+    const download = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Download as JSON' }).click();
+    const json = JSON.parse(readFileSync(await (await download).path(), 'utf8'));
+    expect(json.profiles[0].name).toBe(name);
+    expect(json.profiles[0].schedule).toBe('30 5 * * *');
+  });
+
   test('grids, keyboard and accessibility', async ({ page }) => {
     const violations = collectCspViolations(page);
     await page.goto('/admin/openimport/profile/index/');
@@ -343,7 +367,7 @@ test.describe.serial('OpenImport admin', () => {
     await expect(page.getByRole('button', { name: 'Preview the first rows' })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('combobox', { name: 'Magento field' }).last()).toBeFocused();
-    await page.keyboard.press('Tab');
+    // Typing in the focused list picks the field; the code box only shows for "Other field …".
     await page.keyboard.type('sku');
     await page.keyboard.press('Tab');
     // The store-view select is in the tab order when the shop has store views to offer; then the file column.
