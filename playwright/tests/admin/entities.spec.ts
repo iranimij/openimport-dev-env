@@ -57,11 +57,11 @@ test.describe.serial('OpenImport 1.1 entities', () => {
     const violations = collectCspViolations(page);
     const root = sql('SELECT v.value FROM catalog_category_entity e JOIN catalog_category_entity_varchar v ON v.entity_id = e.entity_id AND v.store_id = 0 JOIN eav_attribute a ON a.attribute_id = v.attribute_id AND a.attribute_code = \'name\' WHERE e.level = 1 ORDER BY e.entity_id LIMIT 1')[0][0];
     await openNewProfile(page, `Categories ${suffix}`, 'openimport_category');
-    await upload(page, 'kategorien.csv', `Kategoriepfad;Name;Aktiv;name_de\n${root}/OI ${suffix}/Schuhe;Shoes;1;Schuhe\n${root}/OI ${suffix}/Jacken;Jackets;0;Jacken\n`);
+    await upload(page, 'kategorien.csv', `Kategoriepfad;Aktiv;name_de\n${root}/OI ${suffix}/Shoes;1;Schuhe\n${root}/OI ${suffix}/Jackets;0;Jacken\n`);
     await autoMatch(page);
     await saveDryRunAndProcess(page);
     await expect(page.locator('.openimport-run')).toContainText('Dry run', { timeout: 60_000 });
-    await expect(page.locator('.openimport-run')).toContainText(`OI ${suffix}/Schuhe`);
+    await expect(page.locator('.openimport-run')).toContainText(`OI ${suffix}/Shoes`);
     expect(sql(`SELECT COUNT(*) FROM catalog_category_entity_varchar WHERE value = 'OI ${suffix}'`)).toEqual([['0']]);
 
     await runForReal(page);
