@@ -357,6 +357,12 @@ test.describe.serial('OpenImport admin', () => {
     await noSeriousAxeViolations(page);
     await page.goto('/admin/openimport/run/index/');
     const runGrid = page.locator('.data-grid').filter({ has: page.locator('tbody td') }).first();
+    await expect(runGrid).toBeVisible({ timeout: 60_000 });
+    const clearRuns = page.locator('.admin__data-grid-filters-current._show .action-clear').first();
+    if (await clearRuns.isVisible().catch(() => false)) {
+      await clearRuns.click();
+      await expect(page.locator('.admin__data-grid-filters-current._show')).toHaveCount(0, { timeout: 30_000 });
+    }
     try {
       await expect(runGrid).toContainText('Success', { timeout: 60_000 });
     } catch (error) {
@@ -389,6 +395,9 @@ test.describe.serial('OpenImport admin', () => {
     await expect(page.getByRole('combobox', { name: 'Column of the file' }).last()).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('textbox', { name: 'Fixed value' }).last()).toBeFocused();
+    await page.keyboard.press('Tab');
+    // Since 1.3 the optional "only when" condition comes before the transform picker.
+    await expect(page.getByRole('textbox', { name: 'Only when (optional)' }).last()).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('combobox', { name: 'Add a transform' }).last()).toBeFocused();
     await noSeriousAxeViolations(page, '#container');

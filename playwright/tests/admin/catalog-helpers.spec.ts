@@ -60,7 +60,8 @@ test.describe.serial('OpenImport catalog helpers', () => {
     const key = sql(`SELECT v.value FROM catalog_product_entity_varchar v JOIN catalog_product_entity e ON e.entity_id = v.entity_id
       JOIN eav_attribute a ON a.attribute_id = v.attribute_id AND a.attribute_code = 'url_key' AND a.entity_type_id = 4
       WHERE e.sku = '${sku}' AND v.store_id = 0`)[0][0];
-    expect(key).toBe(`gruene-jacke-${sku.toLowerCase()}`);
+    // Magento's transliteration without a German locale: ü → u.
+    expect(key).toBe(`grune-jacke-${sku.toLowerCase()}`);
   });
 
   test('several files per run: one run per file', async () => {
