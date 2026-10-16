@@ -5,7 +5,7 @@
       "/home/claude/openimport-dev-env/playwright/node_modules/.bin/playwright",
       "test",
       "--list",
-      "tests/admin/pictures.spec.ts"
+      "tests/admin/configurable.spec.ts"
     ],
     "configFile": "/home/claude/openimport-dev-env/playwright/playwright.config.ts",
     "rootDir": "/home/claude/openimport-dev-env/playwright/tests",
@@ -175,20 +175,20 @@
       ]
     },
     {
-      "title": "admin/pictures.spec.ts",
-      "file": "admin/pictures.spec.ts",
+      "title": "admin/configurable.spec.ts",
+      "file": "admin/configurable.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "OpenImport product pictures",
-          "file": "admin/pictures.spec.ts",
-          "line": 64,
+          "title": "OpenImport configurable products",
+          "file": "admin/configurable.spec.ts",
+          "line": 30,
           "column": 15,
           "specs": [
             {
-              "title": "pictures from web addresses are downloaded once and shown on the product",
+              "title": "variation attributes and a product file become a configurable product",
               "ok": true,
               "tags": [],
               "tests": [
@@ -198,8 +198,8 @@
                     {
                       "type": "serial",
                       "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/pictures.spec.ts",
-                        "line": 64,
+                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/configurable.spec.ts",
+                        "line": 30,
                         "column": 15
                       }
                     }
@@ -211,67 +211,38 @@
                   "status": "skipped"
                 }
               ],
-              "id": "8ddc58d7eef2fdc7b740-859fe77d3f27f4d3c0f6",
-              "file": "admin/pictures.spec.ts",
+              "id": "c28996b5ecd02caea882-e600412e7339a6aff1db",
+              "file": "admin/configurable.spec.ts",
+              "line": 34,
+              "column": 7
+            },
+            {
+              "title": "the profile form offers the variation attributes when building is on",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/configurable.spec.ts",
+                        "line": 30,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "c28996b5ecd02caea882-5a3db97f328a5e737ca4",
+              "file": "admin/configurable.spec.ts",
               "line": 69,
-              "column": 7
-            },
-            {
-              "title": "a picture that cannot be read fails its row, or the row is imported without it",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/pictures.spec.ts",
-                        "line": 64,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "8ddc58d7eef2fdc7b740-6af43d1c5fab1a6cde57",
-              "file": "admin/pictures.spec.ts",
-              "line": 93,
-              "column": 7
-            },
-            {
-              "title": "the profile form offers the picture option for products only",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/pictures.spec.ts",
-                        "line": 64,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "8ddc58d7eef2fdc7b740-b08e3433bf4a20663a69",
-              "file": "admin/pictures.spec.ts",
-              "line": 108,
               "column": 7
             }
           ]
@@ -281,10 +252,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-16T12:27:16.467Z",
-    "duration": 215.96000000000004,
+    "startTime": "2026-10-16T12:55:16.518Z",
+    "duration": 229.08999999999992,
     "expected": 0,
-    "skipped": 4,
+    "skipped": 3,
     "unexpected": 0,
     "flaky": 0
   }
