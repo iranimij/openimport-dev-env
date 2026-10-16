@@ -96,6 +96,19 @@ async function saveAndDryRun(page: Page): Promise<number> {
   return Number(page.url().match(/\/id\/(\d+)/)![1]);
 }
 
+/**
+ * Removes filters an earlier test left in a grid's bookmark. The filter chips render after the rows, so wait a moment
+ * for them instead of checking once.
+ */
+async function clearGridFilters(page: Page): Promise<void> {
+  const clear = page.locator('.admin__data-grid-filters-current._show .action-clear').first();
+  const shown = await clear.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true, () => false);
+  if (shown) {
+    await clear.click();
+    await expect(page.locator('.admin__data-grid-filters-current._show')).toHaveCount(0, { timeout: 30_000 });
+  }
+}
+
 async function processQueue(page: Page): Promise<void> {
   magento('openimport:queue:run');
   await page.reload();
@@ -347,16 +360,14 @@ test.describe.serial('OpenImport admin', () => {
     await expect(grid.first()).toBeVisible({ timeout: 60_000 });
     // A search from an earlier test can stay in the grid's bookmark: start without filters (core's filter chips are
     // not part of what this test checks).
-    const clear = page.locator('.admin__data-grid-filters-current._show .action-clear').first();
-    if (await clear.isVisible().catch(() => false)) {
-      await clear.click();
-      await expect(page.locator('.admin__data-grid-filters-current._show')).toHaveCount(0, { timeout: 30_000 });
-    }
+    await clearGridFilters(page);
     await expect(grid.first()).toContainText(productProfile, { timeout: 60_000 });
     await expect(grid.first()).toContainText('Run #');
     await noSeriousAxeViolations(page);
     await page.goto('/admin/openimport/run/index/');
     const runGrid = page.locator('.data-grid').filter({ has: page.locator('tbody td') }).first();
+    await expect(runGrid).toBeVisible({ timeout: 60_000 });
+    await clearGridFilters(page);
     try {
       await expect(runGrid).toContainText('Success', { timeout: 60_000 });
     } catch (error) {
@@ -389,6 +400,9 @@ test.describe.serial('OpenImport admin', () => {
     await expect(page.getByRole('combobox', { name: 'Column of the file' }).last()).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('textbox', { name: 'Fixed value' }).last()).toBeFocused();
+    await page.keyboard.press('Tab');
+    // Since 1.3 the optional "only when" condition comes before the transform picker.
+    await expect(page.getByRole('textbox', { name: 'Only when (optional)' }).last()).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('combobox', { name: 'Add a transform' }).last()).toBeFocused();
     await noSeriousAxeViolations(page, '#container');
