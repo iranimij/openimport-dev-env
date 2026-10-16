@@ -5,3 +5,4 @@ Small hand-written files for OpenImport's admin and Playwright tests. They are s
 
 - `stock-de.csv`: a German supplier stock feed (semicolon, decimal comma, German headers).
 - `products-small.csv`: three products with an English and a German name column.
+- `pictures/`: three small PNGs (red, blue, green) for product pictures from web addresses.
