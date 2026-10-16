@@ -4,7 +4,8 @@
       "/opt/node22/bin/node",
       "/home/claude/openimport-dev-env/playwright/node_modules/.bin/playwright",
       "test",
-      "--list"
+      "--list",
+      "tests/admin/pictures.spec.ts"
     ],
     "configFile": "/home/claude/openimport-dev-env/playwright/playwright.config.ts",
     "rootDir": "/home/claude/openimport-dev-env/playwright/tests",
@@ -174,20 +175,20 @@
       ]
     },
     {
-      "title": "admin/entities.spec.ts",
-      "file": "admin/entities.spec.ts",
+      "title": "admin/pictures.spec.ts",
+      "file": "admin/pictures.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "OpenImport 1.1 entities",
-          "file": "admin/entities.spec.ts",
-          "line": 56,
+          "title": "OpenImport product pictures",
+          "file": "admin/pictures.spec.ts",
+          "line": 64,
           "column": 15,
           "specs": [
             {
-              "title": "categories from a German file: auto-match, dry run with preview, run for real, store-view name",
+              "title": "pictures from web addresses are downloaded once and shown on the product",
               "ok": true,
               "tags": [],
               "tests": [
@@ -197,8 +198,8 @@
                     {
                       "type": "serial",
                       "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/entities.spec.ts",
-                        "line": 56,
+                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/pictures.spec.ts",
+                        "line": 64,
                         "column": 15
                       }
                     }
@@ -210,13 +211,13 @@
                   "status": "skipped"
                 }
               ],
-              "id": "1462d94bdccb23c5f1f3-7f22363de322b46b08ff",
-              "file": "admin/entities.spec.ts",
-              "line": 59,
+              "id": "8ddc58d7eef2fdc7b740-859fe77d3f27f4d3c0f6",
+              "file": "admin/pictures.spec.ts",
+              "line": 69,
               "column": 7
             },
             {
-              "title": "CMS blocks: upload, dry run, run for real",
+              "title": "a picture that cannot be read fails its row, or the row is imported without it",
               "ok": true,
               "tags": [],
               "tests": [
@@ -226,8 +227,8 @@
                     {
                       "type": "serial",
                       "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/entities.spec.ts",
-                        "line": 56,
+                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/pictures.spec.ts",
+                        "line": 64,
                         "column": 15
                       }
                     }
@@ -239,59 +240,13 @@
                   "status": "skipped"
                 }
               ],
-              "id": "1462d94bdccb23c5f1f3-d70b0c14aafae28f04f7",
-              "file": "admin/entities.spec.ts",
-              "line": 77,
-              "column": 7
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "admin/profiles.spec.ts",
-      "file": "admin/profiles.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "OpenImport admin",
-          "file": "admin/profiles.spec.ts",
-          "line": 104,
-          "column": 15,
-          "specs": [
-            {
-              "title": "products with a German store-view column: upload, auto-match, dry run, run for real",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/profiles.spec.ts",
-                        "line": 104,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "ab3c20bc583e907507e2-9407bfd980007a1b22ba",
-              "file": "admin/profiles.spec.ts",
-              "line": 109,
+              "id": "8ddc58d7eef2fdc7b740-6af43d1c5fab1a6cde57",
+              "file": "admin/pictures.spec.ts",
+              "line": 93,
               "column": 7
             },
             {
-              "title": "stock and prices: +15 % with .99 endings, shown before → after in the dry run",
+              "title": "the profile form offers the picture option for products only",
               "ok": true,
               "tags": [],
               "tests": [
@@ -301,8 +256,8 @@
                     {
                       "type": "serial",
                       "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/profiles.spec.ts",
-                        "line": 104,
+                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/pictures.spec.ts",
+                        "line": 64,
                         "column": 15
                       }
                     }
@@ -314,451 +269,9 @@
                   "status": "skipped"
                 }
               ],
-              "id": "ab3c20bc583e907507e2-f391b50fd05a89ea5de3",
-              "file": "admin/profiles.spec.ts",
-              "line": 148,
-              "column": 7
-            },
-            {
-              "title": "three bad rows: the run imports the rest and the error report has the original rows",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/profiles.spec.ts",
-                        "line": 104,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "ab3c20bc583e907507e2-57c0578725348aadee01",
-              "file": "admin/profiles.spec.ts",
-              "line": 185,
-              "column": 7
-            },
-            {
-              "title": "delete above the safety limit waits for the typed word",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/profiles.spec.ts",
-                        "line": 104,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "ab3c20bc583e907507e2-8fdcbb4a1f6a43745d0e",
-              "file": "admin/profiles.spec.ts",
-              "line": 213,
-              "column": 7
-            },
-            {
-              "title": "every row action of the profiles grid",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/profiles.spec.ts",
-                        "line": 104,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "ab3c20bc583e907507e2-17c93395ece0eb03d711",
-              "file": "admin/profiles.spec.ts",
-              "line": 239,
-              "column": 7
-            },
-            {
-              "title": "an export profile shows only export settings",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/profiles.spec.ts",
-                        "line": 104,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "ab3c20bc583e907507e2-2dd4b746d34cf26631eb",
-              "file": "admin/profiles.spec.ts",
-              "line": 283,
-              "column": 7
-            },
-            {
-              "title": "a failed save opens the step and names every wrong part at the field",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/profiles.spec.ts",
-                        "line": 104,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "ab3c20bc583e907507e2-c2cae4fdf1e287a954ed",
-              "file": "admin/profiles.spec.ts",
-              "line": 300,
-              "column": 7
-            },
-            {
-              "title": "grids, keyboard and accessibility",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/profiles.spec.ts",
-                        "line": 104,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "ab3c20bc583e907507e2-a98bce11f573bbc91365",
-              "file": "admin/profiles.spec.ts",
-              "line": 311,
-              "column": 7
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "admin/smoke.spec.ts",
-      "file": "admin/smoke.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "OpenImport admin baseline",
-          "file": "admin/smoke.spec.ts",
-          "line": 5,
-          "column": 6,
-          "specs": [
-            {
-              "title": "module and base module are enabled",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "c34370dbbc19f4364914-1c143bc3bf3c55bbbd46",
-              "file": "admin/smoke.spec.ts",
-              "line": 6,
-              "column": 7
-            },
-            {
-              "title": "settings section shows runs and safety with the defaults",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "c34370dbbc19f4364914-88983c547dbe140d5013",
-              "file": "admin/smoke.spec.ts",
-              "line": 11,
-              "column": 7
-            },
-            {
-              "title": "ACL tree lists OpenImport under System > Data Transfer",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "c34370dbbc19f4364914-c362ad3927fdbfb4180e",
-              "file": "admin/smoke.spec.ts",
-              "line": 30,
-              "column": 7
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "admin/sources-exports.spec.ts",
-      "file": "admin/sources-exports.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "OpenImport sources and exports",
-          "file": "admin/sources-exports.spec.ts",
-          "line": 67,
-          "column": 15,
-          "specs": [
-            {
-              "title": "a web address as source: test connection, dry run with the downloaded file",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/sources-exports.spec.ts",
-                        "line": 67,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "896e4012114d0dd71424-aa21c16019af74073f70",
-              "file": "admin/sources-exports.spec.ts",
-              "line": 70,
-              "column": 7
-            },
-            {
-              "title": "an SFTP folder as source with a file pattern",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/sources-exports.spec.ts",
-                        "line": 67,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "896e4012114d0dd71424-cb1e8f105eb0814fd1fa",
-              "file": "admin/sources-exports.spec.ts",
-              "line": 94,
-              "column": 7
-            },
-            {
-              "title": "an SFTP login with a private key pasted into its multi-line field",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/sources-exports.spec.ts",
-                        "line": 67,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "896e4012114d0dd71424-363979d4ebac690ae45b",
-              "file": "admin/sources-exports.spec.ts",
-              "line": 109,
-              "column": 7
-            },
-            {
-              "title": "a schedule is saved and shown in the grid",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/sources-exports.spec.ts",
-                        "line": 67,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "896e4012114d0dd71424-e67426d95514569d22df",
-              "file": "admin/sources-exports.spec.ts",
-              "line": 127,
-              "column": 7
-            },
-            {
-              "title": "products to Excel: every column, a renamed price, download from the run page, then SFTP",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/sources-exports.spec.ts",
-                        "line": 67,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "896e4012114d0dd71424-ccff6457da826edcf213",
-              "file": "admin/sources-exports.spec.ts",
-              "line": 147,
-              "column": 7
-            },
-            {
-              "title": "German admin locale: grid values and the run page are translated",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [
-                    {
-                      "type": "serial",
-                      "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/sources-exports.spec.ts",
-                        "line": 67,
-                        "column": 15
-                      }
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "admin-chromium",
-                  "projectName": "admin-chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "896e4012114d0dd71424-7f1cff3b747af7fcae21",
-              "file": "admin/sources-exports.spec.ts",
-              "line": 199,
+              "id": "8ddc58d7eef2fdc7b740-b08e3433bf4a20663a69",
+              "file": "admin/pictures.spec.ts",
+              "line": 108,
               "column": 7
             }
           ]
@@ -768,10 +281,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-15T12:25:09.851Z",
-    "duration": 546.8210000000001,
+    "startTime": "2026-10-16T12:27:16.467Z",
+    "duration": 215.96000000000004,
     "expected": 0,
-    "skipped": 20,
+    "skipped": 4,
     "unexpected": 0,
     "flaky": 0
   }
