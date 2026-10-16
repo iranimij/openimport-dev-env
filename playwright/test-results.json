@@ -5,7 +5,7 @@
       "/home/claude/openimport-dev-env/playwright/node_modules/.bin/playwright",
       "test",
       "--list",
-      "tests/admin/configurable.spec.ts"
+      "tests/admin/catalog-helpers.spec.ts"
     ],
     "configFile": "/home/claude/openimport-dev-env/playwright/playwright.config.ts",
     "rootDir": "/home/claude/openimport-dev-env/playwright/tests",
@@ -175,20 +175,20 @@
       ]
     },
     {
-      "title": "admin/configurable.spec.ts",
-      "file": "admin/configurable.spec.ts",
+      "title": "admin/catalog-helpers.spec.ts",
+      "file": "admin/catalog-helpers.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "OpenImport configurable products",
-          "file": "admin/configurable.spec.ts",
-          "line": 30,
+          "title": "OpenImport catalog helpers",
+          "file": "admin/catalog-helpers.spec.ts",
+          "line": 48,
           "column": 15,
           "specs": [
             {
-              "title": "variation attributes and a product file become a configurable product",
+              "title": "URL keys from a pattern",
               "ok": true,
               "tags": [],
               "tests": [
@@ -198,8 +198,8 @@
                     {
                       "type": "serial",
                       "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/configurable.spec.ts",
-                        "line": 30,
+                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/catalog-helpers.spec.ts",
+                        "line": 48,
                         "column": 15
                       }
                     }
@@ -211,13 +211,13 @@
                   "status": "skipped"
                 }
               ],
-              "id": "c28996b5ecd02caea882-e600412e7339a6aff1db",
-              "file": "admin/configurable.spec.ts",
-              "line": 34,
+              "id": "4ed4bac262827cf46dbc-7f0b727cc1911a808af4",
+              "file": "admin/catalog-helpers.spec.ts",
+              "line": 51,
               "column": 7
             },
             {
-              "title": "the profile form offers the variation attributes when building is on",
+              "title": "several files per run: one run per file",
               "ok": true,
               "tags": [],
               "tests": [
@@ -227,8 +227,8 @@
                     {
                       "type": "serial",
                       "location": {
-                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/configurable.spec.ts",
-                        "line": 30,
+                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/catalog-helpers.spec.ts",
+                        "line": 48,
                         "column": 15
                       }
                     }
@@ -240,9 +240,67 @@
                   "status": "skipped"
                 }
               ],
-              "id": "c28996b5ecd02caea882-5a3db97f328a5e737ca4",
-              "file": "admin/configurable.spec.ts",
-              "line": 69,
+              "id": "4ed4bac262827cf46dbc-838a69e48ba42359e998",
+              "file": "admin/catalog-helpers.spec.ts",
+              "line": 66,
+              "column": 7
+            },
+            {
+              "title": "a transform that only runs when a condition holds",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/catalog-helpers.spec.ts",
+                        "line": 48,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4ed4bac262827cf46dbc-d8c8655145e8a2e4081f",
+              "file": "admin/catalog-helpers.spec.ts",
+              "line": 82,
+              "column": 7
+            },
+            {
+              "title": "a profile from the Shopify preset",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/claude/openimport-dev-env/playwright/tests/admin/catalog-helpers.spec.ts",
+                        "line": 48,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "admin-chromium",
+                  "projectName": "admin-chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "4ed4bac262827cf46dbc-b9b4b4ad0c605871960a",
+              "file": "admin/catalog-helpers.spec.ts",
+              "line": 111,
               "column": 7
             }
           ]
@@ -252,10 +310,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-16T12:55:16.518Z",
-    "duration": 229.08999999999992,
+    "startTime": "2026-10-16T13:37:41.012Z",
+    "duration": 177.01699999999994,
     "expected": 0,
-    "skipped": 3,
+    "skipped": 5,
     "unexpected": 0,
     "flaky": 0
   }
