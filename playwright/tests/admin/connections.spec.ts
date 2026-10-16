@@ -63,7 +63,8 @@ test.describe.serial('OpenImport saved connections', () => {
     await expect(page.locator('input[name="source_config[host]"]')).toBeVisible();
     await page.locator('select[name="source_config[connection_id]"]').selectOption({ label: connectionName });
     await expect(page.locator('input[name="source_config[host]"]')).toBeHidden();
-    await expect(page.locator('input[name="source_config[password]"]')).toBeHidden();
+    // Two password fields share the name (URL login and server login): none is shown.
+    await expect(page.locator('input[name="source_config[password]"]:visible')).toHaveCount(0);
     await page.locator('input[name="source_config[path]"]:visible').fill('fixtures');
     await page.locator('input[name="source_config[pattern]"]:visible').fill('products-*.csv');
     await testConnection(page, /the next run reads products-small\.csv/);
