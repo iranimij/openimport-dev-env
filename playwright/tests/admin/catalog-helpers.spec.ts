@@ -1,14 +1,13 @@
 import { Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { test, expect, magento, magentoRoot, collectCspViolations, seedProducts, sql } from '../fixture';
+import { test, expect, magento, magentoRoot, collectCspViolations, sql } from '../fixture';
 
 /**
  * 1.3 slices 5–8: URL keys from a pattern, conditional transforms in the mapping editor, several files per run and
  * presets.
  */
 const suffix = Date.now().toString(36);
-const files = resolve(__dirname, '../../../fixtures/files');
 
 function cliProfile(profile: Record<string, unknown>): void {
   mkdirSync(resolve(magentoRoot, 'var'), { recursive: true });
@@ -81,23 +80,36 @@ test.describe.serial('OpenImport catalog helpers', () => {
   });
 
   test('a transform that only runs when a condition holds', async ({ page }) => {
-    seedProducts(`helpers-${suffix}`);
+    // Own SKUs: the profiles spec expects OI-FIX-1..3 not to exist yet.
+    const [skuA, skuB] = [`OI-E2E-OW-${suffix}-A`, `OI-E2E-OW-${suffix}-B`];
+    cliProfile({
+      name: `Only when seed ${suffix}`, direction: 'import', entity: 'catalog_product', is_active: false,
+      source_type: 'upload', format: 'csv', behavior: 'add_update', on_error: 'stop', allowed_errors: 0,
+      mapping: productMapping,
+    });
+    writeFileSync(resolve(magentoRoot, `var/openimport-ow-${suffix}.csv`), `sku,name\n${skuA},A ${suffix}\n${skuB},B ${suffix}\n`);
+    runCli(`Only when seed ${suffix}`, '--file', `var/openimport-ow-${suffix}.csv`);
+    expect(sql(`SELECT COUNT(*) FROM catalog_product_entity WHERE sku IN ('${skuA}', '${skuB}')`)[0][0]).toBe('2');
     const violations = collectCspViolations(page);
     await page.goto('/admin/openimport/profile/new/');
     await expect(page.locator('input[name="name"]')).toBeVisible({ timeout: 60_000 });
     await page.locator('input[name="name"]').fill(`Only when ${suffix}`);
     await page.locator('select[name="entity"]').selectOption('openimport_stock_price');
     const answer = page.waitForResponse((r) => r.url().includes('/openimport/profile/upload'), { timeout: 60_000 });
-    await page.locator('.openimport-upload input[type="file"]').setInputFiles(resolve(files, 'stock-de.csv'));
+    await page.locator('.openimport-upload input[type="file"]').setInputFiles({
+      name: 'stock-de.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from(`Artikelnummer;Bestand;Preis\n${skuA};12;19,90\n${skuB};7;24,50\n`),
+    });
     await answer;
     await expect(page.locator('.openimport-sample table')).toBeVisible({ timeout: 30_000 });
     await page.getByRole('button', { name: 'Auto-match' }).click();
     const price = await mappingRow(page, 'price');
-    await price.getByRole('textbox', { name: 'Only when (optional)' }).fill("{Artikelnummer} = 'OI-FIX-1'");
+    await price.getByRole('textbox', { name: 'Only when (optional)' }).fill(`{Artikelnummer} = '${skuA}'`);
     await price.getByRole('combobox', { name: 'Add a transform' }).selectOption({ label: 'Change price by %' });
     await price.locator('.openimport-add-transform input').first().fill('100');
     await price.locator('.openimport-add-transform').getByRole('button', { name: 'Add' }).click();
-    await expect(price.locator('.openimport-chip').last()).toContainText("only when {Artikelnummer} = 'OI-FIX-1'");
+    await expect(price.locator('.openimport-chip').last()).toContainText(`only when {Artikelnummer} = '${skuA}'`);
 
     await page.getByRole('button', { name: 'Save and dry run' }).click();
     await page.waitForURL(/openimport\/run\/view\/id\/(\d+)/, { timeout: 60_000 });
