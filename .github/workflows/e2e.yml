@@ -76,6 +76,18 @@ jobs:
           curl -fsS http://localhost:8081/stock-de.csv
           curl -fsS -u openimport:openimport-http http://localhost:8081/private/products-small.csv
 
+      - name: S3-compatible server (RustFS) with a bucket and a product file
+        run: |
+          # MinIO publishes no images any more; RustFS speaks the S3 API with Signature V4.
+          docker run -d --name s3 -p 9000:9000 -e RUSTFS_ACCESS_KEY=openimport -e RUSTFS_SECRET_KEY=openimport-s3-secret \
+            rustfs/rustfs:latest /data
+          for i in $(seq 1 30); do [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:9000/)" != "000" ] && break; sleep 2; done
+          export AWS_ACCESS_KEY_ID=openimport AWS_SECRET_ACCESS_KEY=openimport-s3-secret AWS_DEFAULT_REGION=us-east-1
+          aws --endpoint-url http://localhost:9000 s3 mb s3://openimport-e2e
+          aws --endpoint-url http://localhost:9000 s3 cp fixtures/files/products-small.csv s3://openimport-e2e/feeds/products-small.csv
+          aws --endpoint-url http://localhost:9000 s3 ls s3://openimport-e2e/feeds/
+          echo "OI_S3=http://localhost:9000|openimport|openimport-s3-secret|openimport-e2e" >> "$GITHUB_ENV"
+
       - name: PHP 8.3, nginx
         run: |
           sudo apt-get update -q
