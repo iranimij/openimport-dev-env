@@ -113,6 +113,32 @@ jobs:
       - name: Fixture store
         run: .github/ci/logged.sh "Fixture store" ci/install-fixture.sh
 
+      - name: Google API stand-in (Drive, token endpoint)
+        # OpenImport's own mock of Google's API (from its integration tests), with a service account key made here and
+        # a folder that holds the small product file; the store's Google endpoints point to it (app/etc/di.xml).
+        run: |
+          folder=1E2eFixtureFolderAbcdefghijklmn
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$RUNNER_TEMP/google.pem" 2>/dev/null
+          openssl pkey -in "$RUNNER_TEMP/google.pem" -pubout -out "$RUNNER_TEMP/google.pub"
+          php -r '
+            $folder = $argv[1]; $temp = $argv[2];
+            $content = file_get_contents("fixtures/files/products-small.csv");
+            file_put_contents("$temp/google-state.json", json_encode(["public_key" => file_get_contents("$temp/google.pub"),
+              "files" => ["fileE2eProducts0000000000001" => ["name" => "products-small.csv", "mimeType" => "text/csv",
+              "parents" => [$folder], "modifiedTime" => gmdate("Y-m-d\TH:i:s.000\Z"), "content" => $content]],
+              "sessions" => [], "requests" => []]));
+            file_put_contents("$temp/google-key.json", json_encode(["type" => "service_account",
+              "client_email" => "e2e@openimport-e2e.iam.gserviceaccount.com",
+              "private_key" => file_get_contents("$temp/google.pem"), "token_uri" => "http://127.0.0.1:8090/token"]));
+          ' "$folder" "$RUNNER_TEMP"
+          OPENIMPORT_GOOGLE_STATE="$RUNNER_TEMP/google-state.json" nohup php -S 127.0.0.1:8090 \
+            "$MAGENTO_ROOT/vendor/iranimij/openimport/Test/Integration/_files/google-server.php" > "$RUNNER_TEMP/google.log" 2>&1 &
+          sleep 2
+          sed -i 's#</config>#    <type name="Iranimij\\OpenImport\\Model\\Google\\GoogleEndpoints">\n        <arguments>\n            <argument name="authorize" xsi:type="string">http://127.0.0.1:8090/auth</argument>\n            <argument name="token" xsi:type="string">http://127.0.0.1:8090/token</argument>\n            <argument name="drive" xsi:type="string">http://127.0.0.1:8090/drive/v3</argument>\n            <argument name="upload" xsi:type="string">http://127.0.0.1:8090/upload/drive/v3</argument>\n        </arguments>\n    </type>\n</config>#' "$MAGENTO_ROOT/app/etc/di.xml"
+          tail -12 "$MAGENTO_ROOT/app/etc/di.xml"
+          (cd "$MAGENTO_ROOT" && bin/magento cache:flush > /dev/null)
+          echo "OI_GOOGLE=$RUNNER_TEMP/google-key.json|$folder" >> "$GITHUB_ENV"
+
       - name: Serve (nginx :80)
         run: |
           sudo tee /etc/nginx/sites-available/default > /dev/null <<NGINX
