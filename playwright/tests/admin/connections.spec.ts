@@ -33,10 +33,10 @@ test.describe.serial('OpenImport saved connections', () => {
     await page.locator('select[name="type"]').selectOption('sftp');
     await page.locator('input[name="settings[host]"]').fill(services.sftpHost);
     await page.locator('input[name="settings[port]"]').fill(services.sftpPort);
-    await page.locator('input[name="settings[username]"]').fill('openimport');
-    await page.locator('input[name="settings[password]"]').fill('wrong');
+    await page.locator('input[name="settings[username]"]:visible').fill('openimport');
+    await page.locator('input[name="settings[password]"]:visible').fill('wrong');
     await testConnection(page, 'login was refused');
-    await page.locator('input[name="settings[password]"]').fill('openimport-sftp');
+    await page.locator('input[name="settings[password]"]:visible').fill('openimport-sftp');
     await testConnection(page, /Connected to .+\. The login folder has \d+ file\(s\)\./);
     await noSeriousAxeViolations(page);
 
