@@ -138,6 +138,29 @@ jobs:
           tail -12 "$MAGENTO_ROOT/app/etc/di.xml"
           (cd "$MAGENTO_ROOT" && bin/magento cache:flush > /dev/null)
           echo "OI_GOOGLE=$RUNNER_TEMP/google-key.json|$folder" >> "$GITHUB_ENV"
+      - name: Dropbox and Microsoft stand-in (consent page, token endpoints, files)
+        # OpenImport's cloud API mock: Dropbox and Graph with a consent page that sends the browser straight back
+        # with a code (the OAuth round trip runs for real through the admin); a supplier folder with the small file.
+        run: |
+          php -r '
+            $temp = $argv[1];
+            $content = file_get_contents("fixtures/files/products-small.csv");
+            file_put_contents("$temp/cloud-state.json", json_encode(["files" => ["Supplier/incoming/products-small.csv" => $content],
+              "folders" => ["Supplier", "Supplier/incoming"], "uploads" => [], "requests" => [], "challenge" => ""]));
+          ' "$RUNNER_TEMP"
+          OPENIMPORT_CLOUD_STATE="$RUNNER_TEMP/cloud-state.json" nohup php -S 127.0.0.1:8091 \
+            "$MAGENTO_ROOT/vendor/iranimij/openimport/Test/Integration/_files/cloud-server.php" > "$RUNNER_TEMP/cloud.log" 2>&1 &
+          # OpenImport's REST API mock: a paged product list behind an API key, Basic or client credentials.
+          echo '{}' > "$RUNNER_TEMP/rest-state.json"
+          OPENIMPORT_REST_STATE="$RUNNER_TEMP/rest-state.json" nohup php -S 127.0.0.1:8092 \
+            "$MAGENTO_ROOT/vendor/iranimij/openimport/Test/Integration/_files/rest-server.php" > "$RUNNER_TEMP/rest.log" 2>&1 &
+          sleep 2
+          curl -fsS -o /dev/null -w 'cloud %{http_code}\n' http://127.0.0.1:8091/dropbox/2/users/get_current_account || true
+          curl -fsS -H 'X-Api-Key: key-1' http://127.0.0.1:8092/v1
+          sed -i 's#</config>#    <type name="Iranimij\\OpenImport\\Model\\Dropbox\\DropboxEndpoints">\n        <arguments>\n            <argument name="authorize" xsi:type="string">http://127.0.0.1:8091/dropbox/oauth2/authorize</argument>\n            <argument name="token" xsi:type="string">http://127.0.0.1:8091/dropbox/oauth2/token</argument>\n            <argument name="api" xsi:type="string">http://127.0.0.1:8091/dropbox/2</argument>\n            <argument name="content" xsi:type="string">http://127.0.0.1:8091/dropbox/content/2</argument>\n        </arguments>\n    </type>\n    <type name="Iranimij\\OpenImport\\Model\\Microsoft\\MicrosoftEndpoints">\n        <arguments>\n            <argument name="login" xsi:type="string">http://127.0.0.1:8091/ms/login</argument>\n            <argument name="graph" xsi:type="string">http://127.0.0.1:8091/ms/graph</argument>\n        </arguments>\n    </type>\n</config>#' "$MAGENTO_ROOT/app/etc/di.xml"
+          (cd "$MAGENTO_ROOT" && bin/magento cache:flush > /dev/null)
+          echo "OI_CLOUD=http://127.0.0.1:8091" >> "$GITHUB_ENV"
+          echo "OI_REST=http://127.0.0.1:8092" >> "$GITHUB_ENV"
 
       - name: Serve (nginx :80)
         run: |
