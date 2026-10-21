@@ -34,7 +34,7 @@ test.describe.serial('OpenImport Google Drive', () => {
     await page.locator('input[name="name"]').fill(connectionName);
     await page.locator('select[name="type"]').selectOption('google_drive');
     await expect(page.locator('select[name="settings[auth_google]"]')).toHaveValue('service_account');
-    await expect(page.locator('input[name="settings[client_id]"]')).toBeHidden();
+    await expect(page.locator('input[name="settings[client_id]"]:visible')).toHaveCount(0);
     await page.locator('textarea[name="settings[service_account_json]"]').fill(key);
     await testConnection(page, 'Connected to Google Drive');
     await noSeriousAxeViolations(page);
