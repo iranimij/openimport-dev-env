@@ -1,10 +1,12 @@
-import { Page } from '@playwright/test';
-import { test, expect, magento, sql, seedProducts, collectCspViolations } from '../fixture';
+import { APIRequestContext } from '@playwright/test';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { test, expect, magento, magentoRoot, sql, adminCredentials, collectCspViolations } from '../fixture';
 
 /**
  * 1.6 automation: triggers (step 6 › "Also run when").
  * - An export profile that runs after product saves: set up in the admin, an OpenImport import of products queues
- *   nothing, a product saved in the admin queues one live run with "Event" as its start, which then exports.
+ *   nothing, two product saves through the REST API queue one live run with "Event" as its start, which then exports.
  */
 const suffix = Date.now().toString(36);
 
@@ -13,14 +15,43 @@ function queued(profileName: string): string[][] {
     WHERE p.name = '${profileName}' AND r.status = 'queued'`);
 }
 
-async function saveProductInAdmin(page: Page, sku: string, name: string): Promise<void> {
-  const id = sql(`SELECT entity_id FROM catalog_product_entity WHERE sku = '${sku}'`)[0][0];
-  await page.goto(`/admin/catalog/product/edit/id/${id}/`);
-  const field = page.locator('input[name="product[name]"]');
-  await expect(field).toBeVisible({ timeout: 90_000 });
-  await field.fill(name);
-  await page.locator('#save-button').click();
-  await expect(page.locator('.message-success')).toContainText('You saved the product', { timeout: 90_000 });
+/** Imports two products of this spec's own (other specs count the shared OI-FIX products as new). */
+function importProducts(): string {
+  const name = `Trigger products ${suffix}`;
+  mkdirSync(resolve(magentoRoot, 'var'), { recursive: true });
+  writeFileSync(resolve(magentoRoot, `var/openimport-trigger-${suffix}.json`), JSON.stringify({
+    openimport: 1,
+    profiles: [{
+      name, direction: 'import', entity: 'catalog_product', is_active: false, source_type: 'upload', format: 'csv',
+      behavior: 'add_update', on_error: 'stop', allowed_errors: 0,
+      mapping: [
+        { target: 'sku', source: 'sku', transforms: [] },
+        { target: 'name', source: 'name', transforms: [] },
+        { target: 'price', source: 'price', transforms: [] },
+        { target: 'qty', source: 'qty', transforms: [] },
+        { target: 'attribute_set_code', static: 'Default', transforms: [] },
+        { target: 'product_type', static: 'simple', transforms: [] },
+        { target: 'product_websites', static: 'base', transforms: [] },
+      ],
+    }],
+  }));
+  writeFileSync(resolve(magentoRoot, `var/openimport-trigger-${suffix}.csv`),
+    `sku,name,price,qty\nOI-TRG-${suffix}-1,Trigger one,10,5\nOI-TRG-${suffix}-2,Trigger two,12,3\n`);
+  magento('openimport:profiles:import', `var/openimport-trigger-${suffix}.json`);
+  return magento('openimport:run', name, '--file', `var/openimport-trigger-${suffix}.csv`);
+}
+
+/** Saves a product through Magento's REST API (an admin token; the fixture has two-factor login switched off). */
+async function saveProduct(request: APIRequestContext, sku: string, name: string): Promise<void> {
+  const { user, password } = adminCredentials();
+  const login = await request.post('/rest/V1/integration/admin/token', { data: { username: user, password } });
+  expect(login.status(), await login.text()).toBe(200);
+  const token = await login.json() as string;
+  const saved = await request.put(`/rest/all/V1/products/${encodeURIComponent(sku)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { product: { sku, name } },
+  });
+  expect(saved.status(), await saved.text()).toBe(200);
 }
 
 test.describe.serial('OpenImport 1.6 automation', () => {
@@ -61,16 +92,16 @@ test.describe.serial('OpenImport 1.6 automation', () => {
     expect(violations).toEqual([]);
   });
 
-  test('an OpenImport import queues nothing; a product saved in the admin queues one run', async ({ page }) => {
+  test('an OpenImport import queues nothing; a product saved through the API queues one run', async ({ request }) => {
     // Clear what other specs left in the queue, so the waiting-run check starts from nothing.
     magento('openimport:queue:run');
     expect(queued(exportName)).toEqual([]);
 
-    expect(seedProducts(`trigger-${suffix}`), 'seed products through the CLI').toMatch(/success|partial/i);
+    expect(importProducts(), 'import products through the CLI').toMatch(/success/i);
     expect(queued(exportName), 'what OpenImport writes starts no triggered run').toEqual([]);
 
-    await saveProductInAdmin(page, 'OI-FIX-1', `Trail shoe ${suffix}`);
-    await saveProductInAdmin(page, 'OI-FIX-1', `Trail shoe ${suffix} again`);
+    await saveProduct(request, `OI-TRG-${suffix}-1`, `Trigger one ${suffix}`);
+    await saveProduct(request, `OI-TRG-${suffix}-1`, `Trigger one ${suffix} again`);
     expect(queued(exportName), 'two saves, one waiting run').toEqual([['event', 'product saved', 'live']]);
 
     magento('openimport:queue:run');
@@ -81,9 +112,9 @@ test.describe.serial('OpenImport 1.6 automation', () => {
     expect(queued(exportName)).toEqual([]);
   });
 
-  test('a profile switched off ignores the event', async ({ page }) => {
+  test('a profile switched off ignores the event', async ({ page, request }) => {
     sql(`UPDATE openimport_profile SET is_active = 0 WHERE name = '${exportName}'`);
-    await saveProductInAdmin(page, 'OI-FIX-2', `Rain jacket ${suffix}`);
+    await saveProduct(request, `OI-TRG-${suffix}-2`, `Trigger two ${suffix}`);
     expect(queued(exportName)).toEqual([]);
     await page.goto('/admin/openimport/profile/index/');
     await expect(page.locator('.data-grid tr', { hasText: exportName })).toContainText('(off)', { timeout: 60_000 });
